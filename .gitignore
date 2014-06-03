@@ -3,3 +3,6 @@
 .svn/
 tags
 .DS_Store
+python/.idea/
+python/bgfx.cpp
+python/build/temp.win32-3.3/Release/bgfx.o
