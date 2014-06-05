@@ -6,3 +6,6 @@ tags
 python/.idea/
 python/bgfx.cpp
 python/build/temp.win32-3.3/Release/bgfx.o
+*.pyd
+python/build/
+python/_bgfx.cpp
