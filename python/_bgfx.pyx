@@ -1,17 +1,21 @@
-cdef extern from "bx.h" namespace "bx":
-    cdef struct ReallocatorI:
-        pass
+cdef extern from "bgfx.c99.h":
+    cdef enum bgfx_renderer_type:
+        BGFX_RENDERER_TYPE_NULL
+        BGFX_RENDERER_TYPE_DIRECT3D9
+        BGFX_RENDERER_TYPE_DIRECT3D11
+        BGFX_RENDERER_TYPE_OPENGLES
+        BGFX_RENDERER_TYPE_OPENGL
 
-cdef extern from "bgfx.h" namespace "bgfx":
-    cdef enum RenderType:
-        Null = 0
-        Direct3D9 = 1
-        Direct3D11 = 2
-        OpenGLES = 3
-        OpenGL = 4
+        BGFX_RENDERER_TYPE_COUNT
+
 
     cdef struct CallbackI:
         pass
 
-    void init(RenderType renderer=Null, CallbackI* _callback = NULL, ReallocatorI* _reallocator = None)
+    cdef struct ReallocatorI:
+        pass
 
+    void bgfx_init(bgfx_renderer_type renderer=BGFX_RENDERER_TYPE_COUNT, CallbackI* _callback = NULL, ReallocatorI* _reallocator = NULL)
+
+cdef init(bgfx_renderer_type renderer=BGFX_RENDERER_TYPE_COUNT, CallbackI* _callback = NULL, ReallocatorI* _reallocator = NULL):
+    bgfx_init(renderer, _callback, _reallocator)
