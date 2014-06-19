@@ -8,11 +8,11 @@ bgfx_root = os.path.split(curdir)[0]
 
 bgfx_build = os.path.join(bgfx_root, ".build", "win32_vs2010", "bin")
 
-build_mode = "Release"
+build_mode = "Debug"
 
 bgfx_module = Extension(
-    "_bgfx",
-    ["_bgfx.pyx"],
+    "bgfx",
+    ["bgfx.pyx"],
     include_dirs=[
         os.path.join(bgfx_root, "..", "bx", "include"),
         os.path.join(bgfx_root, "..", "bx", "include", "compat", "msvc"),
@@ -21,7 +21,11 @@ bgfx_module = Extension(
         os.path.join(bgfx_root, "3rdparty", "khronos")
     ],
     library_dirs=[bgfx_build],
-    libraries=["bgfx" + build_mode],
+    libraries=[
+        "bgfx-shared-lib" + build_mode,
+        "User32",
+        "Gdi32"
+        ],
     #language="c++"
 )
 
