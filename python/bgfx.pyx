@@ -1,7 +1,14 @@
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t, int32_t
 
-cdef extern from "bgfx.c99.h":
-    enum: BGFX_RESET_VSYNC
+cdef extern from "bgfx.h" namespace "bgfx":
+    cdef enum Fatal:
+        DebugCheck
+        MinimumRequiredSpace
+        InvalidShader
+        UnableToInitialize
+        UnableToCreateTexture
+
+"""    enum: BGFX_RESET_VSYNC
     enum: BGFX_CLEAR_COLOR_BIT
     enum: BGFX_CLEAR_DEPTH_BIT
 
@@ -192,33 +199,33 @@ cdef extern from "bgfx.c99.h":
     ctypedef struct bgfx_reallocator_interface_t:
         const bgfx_reallocator_vtbl_t* vtbl
 
-    void bgfx_vertex_decl_begin(bgfx_vertex_decl_t* _decl, bgfx_renderer_type_t _renderer)
-    void bgfx_vertex_decl_add(bgfx_vertex_decl_t* _decl, bgfx_attrib_t _attrib, uint8_t _num, bgfx_attrib_type_t _type, bint _normalized, bint _asInt)
-    void bgfx_vertex_decl_skip(bgfx_vertex_decl_t* _decl, uint8_t _num)
-    void bgfx_vertex_decl_end(bgfx_vertex_decl_t* _decl)
-    void bgfx_vertex_pack(const float _input[4], bint _inputNormalized, bgfx_attrib_t _attr, const bgfx_vertex_decl_t* _decl, void* _data, uint32_t _index)
-    void bgfx_vertex_unpack(float _output[4], bgfx_attrib_t _attr, const bgfx_vertex_decl_t* _decl, const void* _data, uint32_t _index)
-    void bgfx_vertex_convert(const bgfx_vertex_decl_t* _destDecl, void* _destData, const bgfx_vertex_decl_t* _srcDecl, const void* _srcData, uint32_t _num)
-    uint16_t bgfx_weld_vertices(uint16_t* _output, const bgfx_vertex_decl_t* _decl, const void* _data, uint16_t _num, float _epsilon)
-    void bgfx_image_swizzle_bgra8(uint32_t _width, uint32_t _height, uint32_t _pitch, const void* _src, void* _dst)
-    void bgfx_image_rgba8_downsample_2x2(uint32_t _width, uint32_t _height, uint32_t _pitch, const void* _src, void* _dst)
-    uint8_t bgfx_get_supported_renderers(bgfx_renderer_type_t _enum[BGFX_RENDERER_TYPE_COUNT])
-    const char* bgfx_get_renderer_name(bgfx_renderer_type_t _type)
-    void bgfx_init(bgfx_renderer_type_t renderer, bgfx_callback_interface_t* _callback, bgfx_reallocator_interface_t* _reallocator)
-    void bgfx_shutdown()
-    void bgfx_reset(uint32_t _width, uint32_t _height, uint32_t _flags)
-    uint32_t bgfx_frame()
-    bgfx_renderer_type_t bgfx_get_renderer_type()
-    bgfx_caps_t* bgfx_get_caps()
-    const bgfx_memory_t* bgfx_alloc(uint32_t _size)
-    const bgfx_memory_t* bgfx_copy(const void* _data, uint32_t _size)
-    const bgfx_memory_t* bgfx_make_ref(const void* _data, uint32_t _size)
-    void bgfx_set_debug(uint32_t _debug)
-    void bgfx_dbg_text_clear(uint8_t _attr, bint _small)
-    void bgfx_dbg_text_printf(uint16_t _x, uint16_t _y, uint8_t _attr, const char* _format, ...)
-    bgfx_index_buffer_handle_t bgfx_create_index_buffer(const bgfx_memory_t* _mem)
-    void bgfx_destroy_index_buffer(bgfx_index_buffer_handle_t _handle)
-    bgfx_vertex_buffer_handle_t bgfx_create_vertex_buffer(const bgfx_memory_t* _mem, const bgfx_vertex_decl_t* _decl)
+    void vertex_decl_begin(bgfx_vertex_decl_t* _decl, bgfx_renderer_type_t _renderer)
+    void vertex_decl_add(bgfx_vertex_decl_t* _decl, bgfx_attrib_t _attrib, uint8_t _num, bgfx_attrib_type_t _type, bint _normalized, bint _asInt)
+    void vertex_decl_skip(bgfx_vertex_decl_t* _decl, uint8_t _num)
+    void vertex_decl_end(bgfx_vertex_decl_t* _decl)
+    void vertex_pack(const float _input[4], bint _inputNormalized, bgfx_attrib_t _attr, const bgfx_vertex_decl_t* _decl, void* _data, uint32_t _index)
+    void vertex_unpack(float _output[4], bgfx_attrib_t _attr, const bgfx_vertex_decl_t* _decl, const void* _data, uint32_t _index)
+    void vertex_convert(const bgfx_vertex_decl_t* _destDecl, void* _destData, const bgfx_vertex_decl_t* _srcDecl, const void* _srcData, uint32_t _num)
+    uint16_t weld_vertices(uint16_t* _output, const bgfx_vertex_decl_t* _decl, const void* _data, uint16_t _num, float _epsilon)
+    void image_swizzle_bgra8(uint32_t _width, uint32_t _height, uint32_t _pitch, const void* _src, void* _dst)
+    void image_rgba8_downsample_2x2(uint32_t _width, uint32_t _height, uint32_t _pitch, const void* _src, void* _dst)
+    uint8_t get_supported_renderers(bgfx_renderer_type_t _enum[BGFX_RENDERER_TYPE_COUNT])
+    const char* get_renderer_name(bgfx_renderer_type_t _type)
+    void init(bgfx_renderer_type_t renderer, bgfx_callback_interface_t* _callback, bgfx_reallocator_interface_t* _reallocator)
+    void shutdown()
+    void reset(uint32_t _width, uint32_t _height, uint32_t _flags)
+    uint32_t frame()
+    renderer_type_t get_renderer_type()
+    caps_t* get_caps()
+    const bgfx_memory_t* alloc(uint32_t _size)
+    const bgfx_memory_t* copy(const void* _data, uint32_t _size)
+    const bgfx_memory_t* make_ref(const void* _data, uint32_t _size)
+    void set_debug(uint32_t _debug)
+    void dbg_text_clear(uint8_t _attr, bint _small)
+    void dbg_text_printf(uint16_t _x, uint16_t _y, uint8_t _attr, const char* _format, ...)
+    index_buffer_handle_t create_index_buffer(const bgfx_memory_t* _mem)
+    void destroy_index_buffer(index_buffer_handle_t _handle)
+    vertex_buffer_handle_t bgfx_create_vertex_buffer(const bgfx_memory_t* _mem, const bgfx_vertex_decl_t* _decl)
     void bgfx_destroy_vertex_buffer(bgfx_vertex_buffer_handle_t _handle)
     bgfx_dynamic_index_buffer_handle_t bgfx_create_dynamic_index_buffer(uint32_t _num)
     bgfx_dynamic_index_buffer_handle_t bgfx_create_dynamic_index_buffer_mem(const bgfx_memory_t* _mem)
@@ -356,3 +363,4 @@ def debug_text_printf(x, y, attr, format, *args):
 
 def frame():
     bgfx_frame()
+"""

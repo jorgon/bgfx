@@ -17,6 +17,7 @@ bgfx_module = Extension(
     ["bgfx.pyx"],
     include_dirs=[
         os.path.join(bgfx_root, "..", "bx", "include"),
+
         os.path.join(bgfx_root, "..", "bx", "include", "compat", "msvc"),
         os.path.join(bgfx_root, "include"),
         #"$(DXSDK_DIR)\include",
@@ -28,7 +29,7 @@ bgfx_module = Extension(
         "User32",
         "Gdi32"
         ],
-    #language="c++"
+    language="c++"
 )
 
 hgfx_ext = cythonize(
