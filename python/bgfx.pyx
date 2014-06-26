@@ -1,12 +1,85 @@
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t, int32_t
 
 cdef extern from "bgfx.h" namespace "bgfx":
-    cdef enum Fatal:
-        DebugCheck
-        MinimumRequiredSpace
-        InvalidShader
-        UnableToInitialize
-        UnableToCreateTexture
+    cdef enum _Fatal "Fatal":
+        _DebugCheck "bgfx::Fatal::DebugCheck"
+        _MinimumRequiredSpecs "bgfx::Fatal::MinimumRequiredSpecs"
+        _InvalidShader "bgfx::Fatal::InvalidShader"
+        _UnableToInitialize "bgfx::Fatal::UnableToInitialize"
+        _UnableToCreateTexture "bgfx::Fatal::UnableToCreateTexture"
+
+    cdef enum _RendererType "RendererType":
+        _Null "bgfx::RendererType::Null"
+        _Direct3D9 "bgfx::RendererType::Direct3D9"
+        _Direct3D11 "bgfx::RendererType::Direct3D11"
+        _OpenGLES "bgfx::RendererType::OpenGLES"
+        _OpenGL "bgfx::RendererType::OpenGL"
+
+        _RendererTypeCount "bgfx::RendererType::Count"
+
+    cdef enum _Attrib "Attrib":
+        _Position "bgfx::Attrib::Position"
+        _Normal "bgfx::Attrib::Normal"
+        _Tangent "bgfx::Attrib::Tangent"
+        _Color0 "bgfx::Attrib::Color0"
+        _Color1 "bgfx::Attrib::Color1"
+        _Indices "bgfx::Attrib::Indices"
+        _Weight "bgfx::Attrib::Weight"
+        _TexCoord0 "bgfx::Attrib::TexCoord0"
+        _TexCoord1 "bgfx::Attrib::TexCoord1"
+        _TexCoord2 "bgfx::Attrib::TexCoord2"
+        _TexCoord3 "bgfx::Attrib::TexCoord3"
+        _TexCoord4 "bgfx::Attrib::TexCoord4"
+        _TexCoord5 "bgfx::Attrib::TexCoord5"
+        _TexCoord6 "bgfx::Attrib::TexCoord6"
+        _TexCoord7 "bgfx::Attrib::TexCoord7"
+
+        _AttribCount "bgfx::Attrib::Count"
+
+    cdef enum _AttribType "AttribType":
+        _Uint8 "bgfx::AttribType::Uint8"
+        _Int16 "bgfx::AttribType::Int16"
+        _Half "bgfx::AttribType::Half"
+        _Float "bgfx::AttribType::Float"
+        _AttribTypeCount "bgfx::AttribType::Count"
+
+    cdef enum _TextureFormat "TextureFormat":
+        _BC1 "bgfx::TextureFormat::BC1"
+        _BC2 "bgfx::TextureFormat::BC2"
+        _BC3 "bgfx::TextureFormat::BC3"
+        _BC4 "bgfx::TextureFormat::BC4"
+        _BC5 "bgfx::TextureFormat::BC5"
+        _ETC1 "bgfx::TextureFormat::ETC1"
+        _ETC2 "bgfx::TextureFormat::ETC2"
+        _ETC2A "bgfx::TextureFormat::ETC2A"
+        _ETC2A1 "bgfx::TextureFormat::ETC2A1"
+        _PTC12 "bgfx::TextureFormat::PTC12"
+        _PTC14 "bgfx::TextureFormat::PTC14"
+        _PTC12A "bgfx::TextureFormat::PTC12A"
+        _PTC14A "bgfx::TextureFormat::PTC14A"
+        _PTC22 "bgfx::TextureFormat::PTC22"
+        _PTC24 "bgfx::TextureFormat::PTC24"
+        _Unknown "bgfx::TextureFormat::Unknown"
+        _R8 "bgfx::TextureFormat::R8"
+        _R16 "bgfx::TextureFormat::R16"
+        _R16F "bgfx::TextureFormat::R16F"
+        _BGRA8 "bgfx::TextureFormat::BGRA8"
+        _RGBA16 "bgfx::TextureFormat::RGBA16"
+        _RGBA16F "bgfx::TextureFormat::RGBA16F"
+        _R5G6B5 "bgfx::TextureFormat::R5G6B5"
+        _RGBA4 "bgfx::TextureFormat::RGBA4"
+        _RGB5A1 "bgfx::TextureFormat::RGB5A1"
+        _RGB10A2 "bgfx::TextureFormat::RGB10A2"
+        _UnknownDepth "bgfx::TextureFormat::UnknownDepth"
+        _D16 "bgfx::TextureFormat::D16"
+        _D24 "bgfx::TextureFormat::D24"
+        _D24S8 "bgfx::TextureFormat::D24S8"
+        _D32 "bgfx::TextureFormat::D32"
+        _D16F "bgfx::TextureFormat::D16F"
+        _D24F "bgfx::TextureFormat::D24F"
+        _D32F "bgfx::TextureFormat::D32F"
+        _D0S8 "bgfx::TextureFormat::D0S8"
+        _TextureFormatCount "bgfx::TextureFormat::Count"
 
 """    enum: BGFX_RESET_VSYNC
     enum: BGFX_CLEAR_COLOR_BIT
@@ -364,3 +437,82 @@ def debug_text_printf(x, y, attr, format, *args):
 def frame():
     bgfx_frame()
 """
+
+class Fatal:
+    DebugCheck = _DebugCheck
+    MinimumRequiredSpace = _MinimumRequiredSpecs
+    InvalidShader = _InvalidShader
+    UnableToInitialize = _UnableToInitialize
+    UnableToCreateTexture = _UnableToCreateTexture
+
+class RendererType:
+    Null = _Null
+    Direct3D9 = _Direct3D9
+    Direct3D11 = _Direct3D11
+    OpenGLES = _OpenGLES
+    OpenGL = _OpenGL
+
+    Count = _RendererTypeCount
+
+class Attrib:
+    Position = _Position
+    Normal = _Normal
+    Tangent = _Tangent
+    Color0 = _Color0
+    Color1 = _Color1
+    Indices = _Indices
+    Weight = _Weight
+    TexCoord0 = _TexCoord0
+    TexCoord1 = _TexCoord1
+    TexCoord2 = _TexCoord2
+    TexCoord3 = _TexCoord3
+    TexCoord4 = _TexCoord4
+    TexCoord5 = _TexCoord5
+    TexCoord6 = _TexCoord6
+    TexCoord7 = _TexCoord7
+    Count = _AttribCount
+
+class AttribType:
+    Uint8 = _Uint8
+    Int16 = _Int16
+    Half = _Half
+    Float = _Float
+    Count = _AttribCount
+
+class TextureFormat:
+    BC1 = _BC1
+    BC2 = _BC2
+    BC3 = _BC3
+    BC4 = _BC4
+    BC5 = _BC5
+    ETC1 = _ETC1
+    ETC2 = _ETC2
+    ETC2A = _ETC2A
+    ETC2A1 = _ETC2A1
+    PTC12 = _PTC12
+    PTC14 = _PTC14
+    PTC12A = _PTC12A
+    PTC14A = _PTC14A
+    PTC22 = _PTC22
+    PTC24 = _PTC24
+    Unknown = _Unknown
+    R8 = _R8
+    R16 = _R16
+    R16F = _R16F
+    BGRA8 = _BGRA8
+    RGBA16 = _RGBA16
+    RGBA16F = _RGBA16F
+    R5G6B5 = _R5G6B5
+    RGBA4 = _RGBA4
+    RGB5A1 = _RGB5A1
+    RGB10A2 = _RGB10A2
+    UnknownDepth = _UnknownDepth
+    D16 = _D16
+    D24 = _D24
+    D24S8 = _D24S8
+    D32 = _D32
+    D16F = _D16F
+    D24F = _D24F
+    D32F = _D32F
+    D0S8 = _D0S8
+    Count = _TextureFormatCount
