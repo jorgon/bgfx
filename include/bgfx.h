@@ -6,6 +6,9 @@
 #ifndef BGFX_H_HEADER_GUARD
 #define BGFX_H_HEADER_GUARD
 
+#define _HAS_EXCEPTIONS 0
+#define _STATIC_CPPLIB
+
 #include <stdint.h> // uint32_t
 #include <stdlib.h> // size_t
 

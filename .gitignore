@@ -11,3 +11,4 @@ python/build/
 python/_bgfx.cpp
 python/_bgfx.c
 python/bgfx.c
+python/platform.pxi

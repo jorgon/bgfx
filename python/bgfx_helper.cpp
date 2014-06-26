@@ -1,13 +1,13 @@
-#include "bgfx.h"
+#include "bgfx_helper.h"
 
-~callback_helper::callback_helper()
+callback_helper::~callback_helper()
 {
 }
 
 /// If fatal code code is not Fatal::DebugCheck this callback is
 /// called on unrecoverable error. It's not safe to continue, inform
 /// user and terminate application from this call.
-void callback_helper::fatal(Fatal::Enum _code, const char* _str)
+void callback_helper::fatal(bgfx::Fatal::Enum _code, const char* _str)
 {
 }
 
@@ -15,11 +15,13 @@ void callback_helper::fatal(Fatal::Enum _code, const char* _str)
 /// found.
 uint32_t callback_helper::cacheReadSize(uint64_t _id)
 {
+    return 0;
 }
 
 /// Read cached item.
 bool callback_helper::cacheRead(uint64_t _id, void* _data, uint32_t _size)
 {
+    return false;
 }
 
 /// Write cached item.
@@ -33,7 +35,7 @@ void callback_helper::screenShot(const char* _filePath, uint32_t _width, uint32_
 }
 
 /// Called when capture begins.
-void callback_helper::captureBegin(uint32_t _width, uint32_t _height, uint32_t _pitch, TextureFormat::Enum _format, bool _yflip)
+void callback_helper::captureBegin(uint32_t _width, uint32_t _height, uint32_t _pitch, bgfx::TextureFormat::Enum _format, bool _yflip)
 {
 }
 
@@ -46,3 +48,11 @@ void callback_helper::captureEnd()
 void callback_helper::captureFrame(const void* _data, uint32_t _size)
 {
 }
+
+
+#ifdef BX_PLATFORM_WINDOWS
+void set_window(HWND window)
+{
+    bgfx::winSetHwnd(window);
+}
+#endif

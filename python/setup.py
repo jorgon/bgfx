@@ -12,9 +12,18 @@ bgfx_build = os.path.join(bgfx_root, ".build", "win32_vs2010", "bin")
 
 build_mode = "Debug"
 
+platform = {
+    "windows": 1
+}
+
+with open(os.path.join(curdir, "platform.pxi"), "w") as fd:
+    for key, val in platform.items():
+        fd.write('DEF %s = %d\n' % (key.upper(), int(val)))
+
+
 bgfx_module = Extension(
     "bgfx",
-    ["bgfx.pyx"],
+    ["bgfx.pyx", "bgfx_helper.cpp"],
     include_dirs=[
         os.path.join(bgfx_root, "..", "bx", "include"),
 
@@ -23,13 +32,18 @@ bgfx_module = Extension(
         #"$(DXSDK_DIR)\include",
         os.path.join(bgfx_root, "3rdparty", "khronos")
     ],
-    library_dirs=[bgfx_build],
+    library_dirs=[
+        bgfx_build,
+        "C:/Program Files (x86)/Microsoft DirectX SDK (June 2010)/Lib/x86"
+    ],
     libraries=[
-        "bgfx-shared-lib" + build_mode,
+        "bgfx" + build_mode,
         "User32",
         "Gdi32"
         ],
-    language="c++"
+    language="c++",
+    extra_compile_args=["-Zi", "/Od"],
+    extra_link_args=["-debug"],
 )
 
 hgfx_ext = cythonize(

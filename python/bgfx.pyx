@@ -1,229 +1,199 @@
-from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t, int32_t
+from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t, int32_t, UINT32_MAX, UINT16_MAX
+from libcpp cimport bool
+
+include "platform.pxi"
+
+include "defines.pxi"
+
+cdef extern from "bx/allocator.h" namespace "bx":
+    cdef struct _AllocatorI "bx::AllocatorI":
+        void* alloc(size_t _size, size_t _align, const char* _file, uint32_t _line)
+        void free(void* _ptr, size_t _align, const char* _file, uint32_t _line)
+
+    cdef struct _ReallocatorI "bx::ReallocatorI":
+        void* realloc(void* _ptr, size_t _size, size_t _align, const char* _file, uint32_t _line)
+
 
 cdef extern from "bgfx.h" namespace "bgfx":
-    cdef enum _Fatal "Fatal":
-        _DebugCheck "bgfx::Fatal::DebugCheck"
-        _MinimumRequiredSpecs "bgfx::Fatal::MinimumRequiredSpecs"
-        _InvalidShader "bgfx::Fatal::InvalidShader"
-        _UnableToInitialize "bgfx::Fatal::UnableToInitialize"
-        _UnableToCreateTexture "bgfx::Fatal::UnableToCreateTexture"
+    cdef enum _Fatal            "Fatal":
+        _DebugCheck             "bgfx::Fatal::DebugCheck"
+        _MinimumRequiredSpecs   "bgfx::Fatal::MinimumRequiredSpecs"
+        _InvalidShader          "bgfx::Fatal::InvalidShader"
+        _UnableToInitialize     "bgfx::Fatal::UnableToInitialize"
+        _UnableToCreateTexture  "bgfx::Fatal::UnableToCreateTexture"
 
-    cdef enum _RendererType "RendererType":
-        _Null "bgfx::RendererType::Null"
-        _Direct3D9 "bgfx::RendererType::Direct3D9"
-        _Direct3D11 "bgfx::RendererType::Direct3D11"
-        _OpenGLES "bgfx::RendererType::OpenGLES"
-        _OpenGL "bgfx::RendererType::OpenGL"
+    cdef enum _RendererType     "bgfx::RendererType::Enum":
+        _Null                   "bgfx::RendererType::Null"
+        _Direct3D9              "bgfx::RendererType::Direct3D9"
+        _Direct3D11             "bgfx::RendererType::Direct3D11"
+        _OpenGLES               "bgfx::RendererType::OpenGLES"
+        _OpenGL                 "bgfx::RendererType::OpenGL"
 
-        _RendererTypeCount "bgfx::RendererType::Count"
+        _RendererTypeCount      "bgfx::RendererType::Count"
 
-    cdef enum _Attrib "Attrib":
-        _Position "bgfx::Attrib::Position"
-        _Normal "bgfx::Attrib::Normal"
-        _Tangent "bgfx::Attrib::Tangent"
-        _Color0 "bgfx::Attrib::Color0"
-        _Color1 "bgfx::Attrib::Color1"
-        _Indices "bgfx::Attrib::Indices"
-        _Weight "bgfx::Attrib::Weight"
-        _TexCoord0 "bgfx::Attrib::TexCoord0"
-        _TexCoord1 "bgfx::Attrib::TexCoord1"
-        _TexCoord2 "bgfx::Attrib::TexCoord2"
-        _TexCoord3 "bgfx::Attrib::TexCoord3"
-        _TexCoord4 "bgfx::Attrib::TexCoord4"
-        _TexCoord5 "bgfx::Attrib::TexCoord5"
-        _TexCoord6 "bgfx::Attrib::TexCoord6"
-        _TexCoord7 "bgfx::Attrib::TexCoord7"
+    cdef enum _Attrib           "Attrib":
+        _Position               "bgfx::Attrib::Position"
+        _Normal                 "bgfx::Attrib::Normal"
+        _Tangent                "bgfx::Attrib::Tangent"
+        _Color0                 "bgfx::Attrib::Color0"
+        _Color1                 "bgfx::Attrib::Color1"
+        _Indices                "bgfx::Attrib::Indices"
+        _Weight                 "bgfx::Attrib::Weight"
+        _TexCoord0              "bgfx::Attrib::TexCoord0"
+        _TexCoord1              "bgfx::Attrib::TexCoord1"
+        _TexCoord2              "bgfx::Attrib::TexCoord2"
+        _TexCoord3              "bgfx::Attrib::TexCoord3"
+        _TexCoord4              "bgfx::Attrib::TexCoord4"
+        _TexCoord5              "bgfx::Attrib::TexCoord5"
+        _TexCoord6              "bgfx::Attrib::TexCoord6"
+        _TexCoord7              "bgfx::Attrib::TexCoord7"
 
-        _AttribCount "bgfx::Attrib::Count"
+        _AttribCount            "bgfx::Attrib::Count"
 
-    cdef enum _AttribType "AttribType":
-        _Uint8 "bgfx::AttribType::Uint8"
-        _Int16 "bgfx::AttribType::Int16"
-        _Half "bgfx::AttribType::Half"
-        _Float "bgfx::AttribType::Float"
-        _AttribTypeCount "bgfx::AttribType::Count"
+    cdef enum _AttribType       "AttribType":
+        _Uint8                  "bgfx::AttribType::Uint8"
+        _Int16                  "bgfx::AttribType::Int16"
+        _Half                   "bgfx::AttribType::Half"
+        _Float                  "bgfx::AttribType::Float"
+        _AttribTypeCount        "bgfx::AttribType::Count"
 
-    cdef enum _TextureFormat "TextureFormat":
-        _BC1 "bgfx::TextureFormat::BC1"
-        _BC2 "bgfx::TextureFormat::BC2"
-        _BC3 "bgfx::TextureFormat::BC3"
-        _BC4 "bgfx::TextureFormat::BC4"
-        _BC5 "bgfx::TextureFormat::BC5"
-        _ETC1 "bgfx::TextureFormat::ETC1"
-        _ETC2 "bgfx::TextureFormat::ETC2"
-        _ETC2A "bgfx::TextureFormat::ETC2A"
-        _ETC2A1 "bgfx::TextureFormat::ETC2A1"
-        _PTC12 "bgfx::TextureFormat::PTC12"
-        _PTC14 "bgfx::TextureFormat::PTC14"
-        _PTC12A "bgfx::TextureFormat::PTC12A"
-        _PTC14A "bgfx::TextureFormat::PTC14A"
-        _PTC22 "bgfx::TextureFormat::PTC22"
-        _PTC24 "bgfx::TextureFormat::PTC24"
-        _Unknown "bgfx::TextureFormat::Unknown"
-        _R8 "bgfx::TextureFormat::R8"
-        _R16 "bgfx::TextureFormat::R16"
-        _R16F "bgfx::TextureFormat::R16F"
-        _BGRA8 "bgfx::TextureFormat::BGRA8"
-        _RGBA16 "bgfx::TextureFormat::RGBA16"
-        _RGBA16F "bgfx::TextureFormat::RGBA16F"
-        _R5G6B5 "bgfx::TextureFormat::R5G6B5"
-        _RGBA4 "bgfx::TextureFormat::RGBA4"
-        _RGB5A1 "bgfx::TextureFormat::RGB5A1"
-        _RGB10A2 "bgfx::TextureFormat::RGB10A2"
-        _UnknownDepth "bgfx::TextureFormat::UnknownDepth"
-        _D16 "bgfx::TextureFormat::D16"
-        _D24 "bgfx::TextureFormat::D24"
-        _D24S8 "bgfx::TextureFormat::D24S8"
-        _D32 "bgfx::TextureFormat::D32"
-        _D16F "bgfx::TextureFormat::D16F"
-        _D24F "bgfx::TextureFormat::D24F"
-        _D32F "bgfx::TextureFormat::D32F"
-        _D0S8 "bgfx::TextureFormat::D0S8"
-        _TextureFormatCount "bgfx::TextureFormat::Count"
+    cdef enum _TextureFormat    "TextureFormat":
+        _BC1                    "bgfx::TextureFormat::BC1"
+        _BC2                    "bgfx::TextureFormat::BC2"
+        _BC3                    "bgfx::TextureFormat::BC3"
+        _BC4                    "bgfx::TextureFormat::BC4"
+        _BC5                    "bgfx::TextureFormat::BC5"
+        _ETC1                   "bgfx::TextureFormat::ETC1"
+        _ETC2                   "bgfx::TextureFormat::ETC2"
+        _ETC2A                  "bgfx::TextureFormat::ETC2A"
+        _ETC2A1                 "bgfx::TextureFormat::ETC2A1"
+        _PTC12                  "bgfx::TextureFormat::PTC12"
+        _PTC14                  "bgfx::TextureFormat::PTC14"
+        _PTC12A                 "bgfx::TextureFormat::PTC12A"
+        _PTC14A                 "bgfx::TextureFormat::PTC14A"
+        _PTC22                  "bgfx::TextureFormat::PTC22"
+        _PTC24                  "bgfx::TextureFormat::PTC24"
+        _Unknown                "bgfx::TextureFormat::Unknown"
+        _R8                     "bgfx::TextureFormat::R8"
+        _R16                    "bgfx::TextureFormat::R16"
+        _R16F                   "bgfx::TextureFormat::R16F"
+        _BGRA8                  "bgfx::TextureFormat::BGRA8"
+        _RGBA16                 "bgfx::TextureFormat::RGBA16"
+        _RGBA16F                "bgfx::TextureFormat::RGBA16F"
+        _R5G6B5                 "bgfx::TextureFormat::R5G6B5"
+        _RGBA4                  "bgfx::TextureFormat::RGBA4"
+        _RGB5A1                 "bgfx::TextureFormat::RGB5A1"
+        _RGB10A2                "bgfx::TextureFormat::RGB10A2"
+        _UnknownDepth           "bgfx::TextureFormat::UnknownDepth"
+        _D16                    "bgfx::TextureFormat::D16"
+        _D24                    "bgfx::TextureFormat::D24"
+        _D24S8                  "bgfx::TextureFormat::D24S8"
+        _D32                    "bgfx::TextureFormat::D32"
+        _D16F                   "bgfx::TextureFormat::D16F"
+        _D24F                   "bgfx::TextureFormat::D24F"
+        _D32F                   "bgfx::TextureFormat::D32F"
+        _D0S8                   "bgfx::TextureFormat::D0S8"
+        _TextureFormatCount     "bgfx::TextureFormat::Count"
 
-"""    enum: BGFX_RESET_VSYNC
-    enum: BGFX_CLEAR_COLOR_BIT
-    enum: BGFX_CLEAR_DEPTH_BIT
+    cdef enum _UniformType      "UniformType":
+        _Uniform1i              "bgfx::UniformType::Uniform1i"
+        _Uniform1f              "bgfx::UniformType::Uniform1f"
+        _End                    "bgfx::UniformType::End"
+        _Uniform1iv             "bgfx::UniformType::Uniform1iv"
+        _Uniform1fv             "bgfx::UniformType::Uniform1fv"
+        _Uniform2fv             "bgfx::UniformType::Uniform2fv"
+        _Uniform3fv             "bgfx::UniformType::Uniform3fv"
+        _Uniform4fv             "bgfx::UniformType::Uniform4fv"
+        _Uniform3x3fv           "bgfx::UniformType::Uniform3x3fv"
+        _Uniform4x4fv           "bgfx::UniformType::Uniform4x4fv"
+        _UniformTypeCount       "bgfx::UniformType::Count"
 
-    ctypedef enum bgfx_renderer_type_t:
-        BGFX_RENDERER_TYPE_NULL
-        BGFX_RENDERER_TYPE_DIRECT3D9
-        BGFX_RENDERER_TYPE_DIRECT3D11
-        BGFX_RENDERER_TYPE_OPENGLES
-        BGFX_RENDERER_TYPE_OPENGL
+    cdef struct _DynamicIndexBufferHandle "bgfx::DynamicIndexBufferHandle":
+        uint16_t idx
+        bool isValid(_DynamicIndexBufferHandle _handle)
 
-    enum: BGFX_RENDERER_TYPE_COUNT
+    cdef struct _DynamicVertexBufferHandle "bgfx::DynamicVertexBufferHandle":
+        uint16_t idx
+        bool isValid(_DynamicVertexBufferHandle _handle)
 
-    cdef enum bgfx_attrib_t:
-        BGFX_ATTRIB_POSITION
-        BGFX_ATTRIB_NORMAL
-        BGFX_ATTRIB_TANGENT
-        BGFX_ATTRIB_COLOR0
-        BGFX_ATTRIB_COLOR1
-        BGFX_ATTRIB_INDICES
-        BGFX_ATTRIB_WEIGHT
-        BGFX_ATTRIB_TEXCOORD0
-        BGFX_ATTRIB_TEXCOORD1
-        BGFX_ATTRIB_TEXCOORD2
-        BGFX_ATTRIB_TEXCOORD3
-        BGFX_ATTRIB_TEXCOORD4
-        BGFX_ATTRIB_TEXCOORD5
-        BGFX_ATTRIB_TEXCOORD6
-        BGFX_ATTRIB_TEXCOORD7
+    cdef struct _FrameBufferHandle "bgfx::FrameBufferHandle":
+        uint16_t idx
+        bool isValid(_FrameBufferHandle _handle)
 
-    enum: BGFX_ATTRIB_COUNT
+    cdef struct _IndexBufferHandle "bgfx::IndexBufferHandle":
+        uint16_t idx
+        bool isValid(_IndexBufferHandle _handle)
 
-    ctypedef enum bgfx_attrib_type_t:
-        BGFX_ATTRIB_TYPE_UINT8
-        BGFX_ATTRIB_TYPE_INT16
-        BGFX_ATTRIB_TYPE_HALF
-        BGFX_ATTRIB_TYPE_FLOAT
+    cdef struct _ProgramHandle "bgfx::ProgramHandle":
+        uint16_t idx
+        bool isValid(_ProgramHandle _handle)
 
-    enum: BGFX_ATTRIB_TYPE_COUNT
+    cdef struct _ShaderHandle "bgfx::ShaderHandle":
+        uint16_t idx
+        bool isValid(_ShaderHandle _handle)
 
-    ctypedef enum bgfx_texture_format_t:
-        BGFX_TEXTURE_FORMAT_BC1
-        BGFX_TEXTURE_FORMAT_BC2
-        BGFX_TEXTURE_FORMAT_BC3
-        BGFX_TEXTURE_FORMAT_BC4
-        BGFX_TEXTURE_FORMAT_BC5
-        BGFX_TEXTURE_FORMAT_ETC1
-        BGFX_TEXTURE_FORMAT_ETC2
-        BGFX_TEXTURE_FORMAT_ETC2A
-        BGFX_TEXTURE_FORMAT_ETC2A1
-        BGFX_TEXTURE_FORMAT_PTC12
-        BGFX_TEXTURE_FORMAT_PTC14
-        BGFX_TEXTURE_FORMAT_PTC12A
-        BGFX_TEXTURE_FORMAT_PTC14A
-        BGFX_TEXTURE_FORMAT_PTC22
-        BGFX_TEXTURE_FORMAT_PTC24
+    cdef struct _TextureHandle "bgfx::TextureHandle":
+        uint16_t idx
+        bool isValid(_TextureHandle _handle)
 
-        BGFX_TEXTURE_FORMAT_UNKNOWN
+    cdef struct _UniformHandle "bgfx::UniformHandle":
+        uint16_t idx
+        bool isValid(_UniformHandle _handle)
 
-        BGFX_TEXTURE_FORMAT_R8
-        BGFX_TEXTURE_FORMAT_R16
-        BGFX_TEXTURE_FORMAT_R16F
-        BGFX_TEXTURE_FORMAT_BGRA8
-        BGFX_TEXTURE_FORMAT_RGBA16
-        BGFX_TEXTURE_FORMAT_RGBA16F
-        BGFX_TEXTURE_FORMAT_R5G6B5
-        BGFX_TEXTURE_FORMAT_RGBA4
-        BGFX_TEXTURE_FORMAT_RGB5A1
-        BGFX_TEXTURE_FORMAT_RGB10A2
+    cdef struct _VertexBufferHandle "bgfx::VertexBufferHandle":
+        uint16_t idx
+        bool isValid(_VertexBufferHandle _handle)
 
-        BGFX_TEXTURE_FORMAT_UNKNOWN_DEPTH
+    cdef struct _VertexDeclHandle "bgfx::VertexDeclHandle":
+        uint16_t idx
+        bool isValid(_VertexDeclHandle _handle)
 
-        BGFX_TEXTURE_FORMAT_D16
-        BGFX_TEXTURE_FORMAT_D24
-        BGFX_TEXTURE_FORMAT_D24S8
-        BGFX_TEXTURE_FORMAT_D32
-        BGFX_TEXTURE_FORMAT_D16F
-        BGFX_TEXTURE_FORMAT_D24F
-        BGFX_TEXTURE_FORMAT_D32F
-        BGFX_TEXTURE_FORMAT_D0S8
+    cdef struct _CallbackI "bgfx::CallbackI":
+        void fatal(_Fatal _code, const char* _str)
+        uint32_t cacheReadSize(uint64_t _id)
+        bool cacheRead(uint64_t _id, void* _data, uint32_t _size)
+        void cacheWrite(uint64_t _id, const void* _data, uint32_t _size)
+        void screenShot(const char* _filePath, uint32_t _width, uint32_t _height, uint32_t _pitch, const void* _data, uint32_t _size, bool _yflip)
+        void captureBegin(uint32_t _width, uint32_t _height, uint32_t _pitch, _TextureFormat _format, bool _yflip)
+        void captureEnd()
+        void captureFrame(const void* _data, uint32_t _size)
 
-    enum: BGFX_TEXTURE_FORMAT_COUNT
-
-    ctypedef enum bgfx_uniform_type_t:
-        BGFX_UNIFORM_TYPE_UNIFORM1I
-        BGFX_UNIFORM_TYPE_UNIFORM1F
-        BGFX_UNIFORM_TYPE_END
-
-        BGFX_UNIFORM_TYPE_UNIFORM1IV
-        BGFX_UNIFORM_TYPE_UNIFORM1FV
-        BGFX_UNIFORM_TYPE_UNIFORM2FV
-        BGFX_UNIFORM_TYPE_UNIFORM3FV
-        BGFX_UNIFORM_TYPE_UNIFORM4FV
-        BGFX_UNIFORM_TYPE_UNIFORM3X3FV
-        BGFX_UNIFORM_TYPE_UNIFORM4X4FV
-
-    enum: BGFX_UNIFORM_TYPE_COUNT
-
-    ctypedef uint16_t bgfx_dynamic_index_buffer_handle_t
-    ctypedef uint16_t bgfx_dynamic_vertex_buffer_handle_t
-    ctypedef uint16_t bgfx_frame_buffer_handle_t
-    ctypedef uint16_t bgfx_index_buffer_handle_t
-    ctypedef uint16_t bgfx_program_handle_t
-    ctypedef uint16_t bgfx_shader_handle_t
-    ctypedef uint16_t bgfx_texture_handle_t
-    ctypedef uint16_t bgfx_uniform_handle_t
-    ctypedef uint16_t bgfx_vertex_buffer_handle_t
-    ctypedef uint16_t bgfx_vertex_decl_handle_t
-
-    ctypedef struct bgfx_memory_t:
+    cdef struct _Memory "bgfx::Memory":
         uint8_t* data
         uint32_t size
 
-    ctypedef struct bgfx_vertex_decl_t:
-        uint32_t hash
-        uint16_t stride
-        uint16_t offset[BGFX_ATTRIB_COUNT]
-        uint8_t attributes[BGFX_ATTRIB_COUNT]
+    cdef struct _Caps "bgfx::Caps":
+        _RendererType rendererType
+        uint64_t supported
+        uint64_t emulated
+        uint64_t maxTextureSize
+        uint64_t maxDrawCalls
+        uint64_t maxFBAttachments
 
-    ctypedef struct bgfx_transient_index_buffer_t:
+    cdef struct _TransientIndexBuffer "bgfx::TransientIndexBuffer":
         uint8_t* data
         uint32_t size
-        bgfx_index_buffer_handle_t handle
+        _IndexBufferHandle handle
         uint32_t startIndex
 
-    ctypedef struct bgfx_transient_vertex_buffer_t:
+    cdef struct _TransientVertexBuffer "bgfx::TransientVertexBuffer":
         uint8_t* data
         uint32_t size
         uint32_t startVertex
         uint16_t stride
-        bgfx_vertex_buffer_handle_t handle
-        bgfx_vertex_decl_handle_t decl
+        _VertexBufferHandle handle
+        _VertexDeclHandle decl
 
-    ctypedef struct bgfx_instance_data_buffer_t:
+    cdef struct _InstanceDataBuffer "bgfx::InstanceDataBuffer":
         uint8_t* data
         uint32_t size
         uint32_t offset
         uint16_t stride
         uint16_t num
-        bgfx_vertex_buffer_handle_t handle
+        _VertexBufferHandle handle
 
-    ctypedef struct bgfx_texture_info_t:
-        bgfx_texture_format_t format
+    cdef struct _TextureInfo "bgfx::TextureInfo":
+        _TextureFormat format
         uint32_t storageSize
         uint16_t width
         uint16_t height
@@ -231,146 +201,147 @@ cdef extern from "bgfx.h" namespace "bgfx":
         uint8_t numMips
         uint8_t bitsPerPixel
 
-    ctypedef struct bgfx_caps_t:
-        bgfx_renderer_type_t rendererType
-        uint64_t supported
-        uint64_t emulated
-        uint16_t maxTextureSize
-        uint16_t maxDrawCalls
-        uint8_t  maxFBAttachments
 
-    ctypedef enum bgfx_fatal_t:
-        BGFX_FATAL_DEBUG_CHECK
-        BGFX_FATAL_MINIMUM_REQUIRED_SPECS
-        BGFX_FATAL_INVALID_SHADER
-        BGFX_FATAL_UNABLE_TO_INITIALIZE
-        BGFX_FATAL_UNABLE_TO_CREATE_TEXTURE
+    cdef struct _VertexDecl "bgfx::VertexDecl":
+        _VertexDecl& begin(_RendererType _renderer)
+        void end()
 
-    ctypedef struct bgfx_callback_interface_vtbl_t:
-        void* ctor
-        void (__stdcall *fatal)(bgfx_fatal_t code, const char* _str)
-        uint32_t (__stdcall *cache_read_size)(uint64_t _id)
-        bint (__stdcall *cache_read)(uint64_t _id, void* _data, uint32_t _size)
-        void (__stdcall *cache_write)(uint64_t _id, const void* _data, uint32_t _size)
-        void (__stdcall *screen_shot)(const char* _filePath, uint32_t _width, uint32_t _height,
-                                      uint32_t _pitch, const void* _data, uint32_t _size, bint _yflip)
-        void (__stdcall *capture_begin)(uint32_t _width, uint32_t _height, uint32_t _pitch,
-                                        bgfx_texture_format_t _format, bint _yflip)
-        void (__stdcall *capture_end)()
-        void (__stdcall *capture_frame)(const void* _data, uint32_t _size)
+        _VertexDecl& add(_Attrib _attrib, uint8_t _num, _AttribType _type, bool _normalized, bool _asInt)
+        _VertexDecl& skip(uint8_t _num)
+        void decode(_Attrib _attrib, uint8_t& _num, _AttribType& _type, bool& _normalized, bool& _asInt)
+        bool has(_Attrib _attrib)
+        uint16_t getOffset(_Attrib _attrib)
+        uint16_t getStride()
+        uint32_t getSize(uint32_t _num)
+        uint32_t m_hash
+        uint16_t m_stride
+        uint16_t* m_offset
+        uint8_t* m_attributes
 
+    cdef void _vertexPack "bgfx::vertexPack" (const float _input[4],
+                                         bool _inputNormalized,
+                                         _Attrib _attr,
+                                         const _VertexDecl& _decl,
+                                         void* _data,
+                                         uint32_t _index = 0)
 
-    ctypedef struct bgfx_callback_interface_t:
-        const bgfx_callback_interface_vtbl_t* vtbl
+    cdef void _vertexUnpack "bgfx::vertexUnpack" (float _output[4],
+                                            _Attrib _attr,
+                                            const _VertexDecl& _decl,
+                                            const void* _data,
+                                            uint32_t _index = 0)
 
-    ctypedef struct bgfx_reallocator_vtbl_t:
-        void* ctor
-        void* (__stdcall *alloc)(size_t _size, size_t _align, const char* _file, uint32_t _line)
-        void  (__stdcall *free)(void* _ptr, size_t _align, const char* _file, uint32_t _line)
-        void* (__stdcall *realloc)(void* _ptr, size_t _size, size_t _align, const char* _file, uint32_t _line)
+    cdef void _vertexConvert "bgfx::vertexConvert" (const _VertexDecl& _destDecl,
+                                               void* _destData,
+                                               const _VertexDecl& _srcDecl,
+                                               const void* _srcData,
+                                               uint32_t _num = 1)
 
-    ctypedef struct bgfx_reallocator_interface_t:
-        const bgfx_reallocator_vtbl_t* vtbl
+    cdef uint16_t _weldVertices "bgfx::weldVertices" (uint16_t* _output,
+                                                     const _VertexDecl& _decl,
+                                                     const void* _data,
+                                                     uint16_t _num,
+                                                     float _epsilon = 0.001)
 
-    void vertex_decl_begin(bgfx_vertex_decl_t* _decl, bgfx_renderer_type_t _renderer)
-    void vertex_decl_add(bgfx_vertex_decl_t* _decl, bgfx_attrib_t _attrib, uint8_t _num, bgfx_attrib_type_t _type, bint _normalized, bint _asInt)
-    void vertex_decl_skip(bgfx_vertex_decl_t* _decl, uint8_t _num)
-    void vertex_decl_end(bgfx_vertex_decl_t* _decl)
-    void vertex_pack(const float _input[4], bint _inputNormalized, bgfx_attrib_t _attr, const bgfx_vertex_decl_t* _decl, void* _data, uint32_t _index)
-    void vertex_unpack(float _output[4], bgfx_attrib_t _attr, const bgfx_vertex_decl_t* _decl, const void* _data, uint32_t _index)
-    void vertex_convert(const bgfx_vertex_decl_t* _destDecl, void* _destData, const bgfx_vertex_decl_t* _srcDecl, const void* _srcData, uint32_t _num)
-    uint16_t weld_vertices(uint16_t* _output, const bgfx_vertex_decl_t* _decl, const void* _data, uint16_t _num, float _epsilon)
-    void image_swizzle_bgra8(uint32_t _width, uint32_t _height, uint32_t _pitch, const void* _src, void* _dst)
-    void image_rgba8_downsample_2x2(uint32_t _width, uint32_t _height, uint32_t _pitch, const void* _src, void* _dst)
-    uint8_t get_supported_renderers(bgfx_renderer_type_t _enum[BGFX_RENDERER_TYPE_COUNT])
-    const char* get_renderer_name(bgfx_renderer_type_t _type)
-    void init(bgfx_renderer_type_t renderer, bgfx_callback_interface_t* _callback, bgfx_reallocator_interface_t* _reallocator)
-    void shutdown()
-    void reset(uint32_t _width, uint32_t _height, uint32_t _flags)
-    uint32_t frame()
-    renderer_type_t get_renderer_type()
-    caps_t* get_caps()
-    const bgfx_memory_t* alloc(uint32_t _size)
-    const bgfx_memory_t* copy(const void* _data, uint32_t _size)
-    const bgfx_memory_t* make_ref(const void* _data, uint32_t _size)
-    void set_debug(uint32_t _debug)
-    void dbg_text_clear(uint8_t _attr, bint _small)
-    void dbg_text_printf(uint16_t _x, uint16_t _y, uint8_t _attr, const char* _format, ...)
-    index_buffer_handle_t create_index_buffer(const bgfx_memory_t* _mem)
-    void destroy_index_buffer(index_buffer_handle_t _handle)
-    vertex_buffer_handle_t bgfx_create_vertex_buffer(const bgfx_memory_t* _mem, const bgfx_vertex_decl_t* _decl)
-    void bgfx_destroy_vertex_buffer(bgfx_vertex_buffer_handle_t _handle)
-    bgfx_dynamic_index_buffer_handle_t bgfx_create_dynamic_index_buffer(uint32_t _num)
-    bgfx_dynamic_index_buffer_handle_t bgfx_create_dynamic_index_buffer_mem(const bgfx_memory_t* _mem)
-    void bgfx_update_dynamic_index_buffer(bgfx_dynamic_index_buffer_handle_t _handle, const bgfx_memory_t* _mem)
-    void bgfx_destroy_dynamic_index_buffer(bgfx_dynamic_index_buffer_handle_t _handle)
-    bgfx_dynamic_vertex_buffer_handle_t bgfx_create_dynamic_vertex_buffer(uint16_t _num, const bgfx_vertex_decl_t* _decl)
-    bgfx_dynamic_vertex_buffer_handle_t bgfx_create_dynamic_vertex_buffer_mem(const bgfx_memory_t* _mem, const bgfx_vertex_decl_t* _decl)
-    void bgfx_update_dynamic_vertex_buffer(bgfx_dynamic_vertex_buffer_handle_t _handle, const bgfx_memory_t* _mem)
-    void bgfx_destroy_dynamic_vertex_buffer(bgfx_dynamic_vertex_buffer_handle_t _handle)
-    bint bgfx_check_avail_transient_index_buffer(uint32_t _num)
-    bint bgfx_check_avail_transient_vertex_buffer(uint32_t _num, const bgfx_vertex_decl_t* _decl)
-    bint bgfx_check_avail_instance_data_buffer(uint32_t _num, uint16_t _stride)
-    bint bgfx_check_avail_transient_buffers(uint32_t _numVertices, const bgfx_vertex_decl_t* _decl, uint32_t _numIndices)
-    void bgfx_alloc_transient_index_buffer(bgfx_transient_index_buffer_t* _tib, uint32_t _num)
-    void bgfx_alloc_transient_vertex_buffer(bgfx_transient_vertex_buffer_t* _tvb, uint32_t _num, const bgfx_vertex_decl_t* _decl)
-    bint bgfx_alloc_transient_buffers(bgfx_transient_vertex_buffer_t* _tvb, const bgfx_vertex_decl_t* _decl, uint16_t _numVertices, bgfx_transient_index_buffer_t* _tib, uint16_t _numIndices)
-    const bgfx_instance_data_buffer_t* bgfx_alloc_instance_data_buffer(uint32_t _num, uint16_t _stride)
-    bgfx_shader_handle_t bgfx_create_shader(const bgfx_memory_t* _mem)
-    uint16_t bgfx_get_shader_uniforms(bgfx_shader_handle_t _handle, bgfx_uniform_handle_t* _uniforms, uint16_t _max)
-    void bgfx_destroy_shader(bgfx_shader_handle_t _handle)
-    bgfx_program_handle_t bgfx_create_program(bgfx_shader_handle_t _vsh, bgfx_shader_handle_t _fsh, bint _destroyShaders)
-    void bgfx_destroy_program(bgfx_program_handle_t _handle)
-    void bgfx_calc_texture_size(bgfx_texture_info_t* _info, uint16_t _width, uint16_t _height, uint16_t _depth, uint8_t _numMips, bgfx_texture_format_t _format)
-    bgfx_texture_handle_t bgfx_create_texture(const bgfx_memory_t* _mem, uint32_t _flags, uint8_t _skip, bgfx_texture_info_t* _info)
-    bgfx_texture_handle_t bgfx_create_texture_2d(uint16_t _width, uint16_t _height, uint8_t _numMips, bgfx_texture_format_t _format, uint32_t _flags, const bgfx_memory_t* _mem)
-    bgfx_texture_handle_t bgfx_create_texture_3d(uint16_t _width, uint16_t _height, uint16_t _depth, uint8_t _numMips, bgfx_texture_format_t _format, uint32_t _flags, const bgfx_memory_t* _mem)
-    bgfx_texture_handle_t bgfx_create_texture_cube(uint16_t _size, uint8_t _numMips, bgfx_texture_format_t _format, uint32_t _flags, const bgfx_memory_t* _mem)
-    void bgfx_update_texture_2d(bgfx_texture_handle_t _handle, uint8_t _mip, uint16_t _x, uint16_t _y, uint16_t _width, uint16_t _height, const bgfx_memory_t* _mem, uint16_t _pitch)
-    void bgfx_update_texture_3d(bgfx_texture_handle_t _handle, uint8_t _mip, uint16_t _x, uint16_t _y, uint16_t _z, uint16_t _width, uint16_t _height, uint16_t _depth, const bgfx_memory_t* _mem)
-    void bgfx_update_texture_cube(bgfx_texture_handle_t _handle, uint8_t _side, uint8_t _mip, uint16_t _x, uint16_t _y, uint16_t _width, uint16_t _height, const bgfx_memory_t* _mem, uint16_t _pitch)
-    void bgfx_destroy_texture(bgfx_texture_handle_t _handle)
-    bgfx_frame_buffer_handle_t bgfx_create_frame_buffer(uint16_t _width, uint16_t _height, bgfx_texture_format_t _format, uint32_t _textureFlags)
-    bgfx_frame_buffer_handle_t bgfx_create_frame_buffer_from_handles(uint8_t _num, bgfx_texture_handle_t* _handles, bint _destroyTextures)
-    void bgfx_destroy_frame_buffer(bgfx_frame_buffer_handle_t _handle)
-    bgfx_uniform_handle_t bgfx_create_uniform(const char* _name, bgfx_uniform_type_t _type, uint16_t _num)
-    void bgfx_destroy_uniform(bgfx_uniform_handle_t _handle)
-    void bgfx_set_view_name(uint8_t _id, const char* _name)
-    void bgfx_set_view_rect(uint8_t _id, uint16_t _x, uint16_t _y, uint16_t _width, uint16_t _height)
-    void bgfx_set_view_rect_mask(uint32_t _viewMask, uint16_t _x, uint16_t _y, uint16_t _width, uint16_t _height)
-    void bgfx_set_view_scissor(uint8_t _id, uint16_t _x, uint16_t _y, uint16_t _width, uint16_t _height)
-    void bgfx_set_view_scissor_mask(uint32_t _viewMask, uint16_t _x, uint16_t _y, uint16_t _width, uint16_t _height)
-    void bgfx_set_view_clear(uint8_t _id, uint8_t _flags, uint32_t _rgba, float _depth, uint8_t _stencil)
-    void bgfx_set_view_clear_mask(uint32_t _viewMask, uint8_t _flags, uint32_t _rgba, float _depth, uint8_t _stencil)
-    void bgfx_set_view_seq(uint8_t _id, bint _enabled)
-    void bgfx_set_view_seq_mask(uint32_t _viewMask, bint _enabled)
-    void bgfx_set_view_frame_buffer(uint8_t _id, bgfx_frame_buffer_handle_t _handle)
-    void bgfx_set_view_frame_buffer_mask(uint32_t _viewMask, bgfx_frame_buffer_handle_t _handle)
-    void bgfx_set_view_transform(uint8_t _id, const void* _view, const void* _proj)
-    void bgfx_set_view_transform_mask(uint32_t _viewMask, const void* _view, const void* _proj)
-    void bgfx_set_marker(const char* _marker)
-    void bgfx_set_state(uint64_t _state, uint32_t _rgba)
-    void bgfx_set_stencil(uint32_t _fstencil, uint32_t _bstencil)
-    uint16_t bgfx_set_scissor(uint16_t _x, uint16_t _y, uint16_t _width, uint16_t _height)
-    void bgfx_set_scissor_cached(uint16_t _cache)
-    uint32_t bgfx_set_transform(const void* _mtx, uint16_t _num)
-    void bgfx_set_transform_cached(uint32_t _cache, uint16_t _num)
-    void bgfx_set_uniform(bgfx_uniform_handle_t _handle, const void* _value, uint16_t _num)
-    void bgfx_set_index_buffer(bgfx_index_buffer_handle_t _handle, uint32_t _firstIndex, uint32_t _numIndices)
-    void bgfx_set_dynamic_index_buffer(bgfx_dynamic_index_buffer_handle_t _handle, uint32_t _firstIndex, uint32_t _numIndices)
-    void bgfx_set_transient_index_buffer(const bgfx_transient_index_buffer_t* _tib, uint32_t _firstIndex, uint32_t _numIndices)
-    void bgfx_set_vertex_buffer(bgfx_vertex_buffer_handle_t _handle, uint32_t _startVertex, uint32_t _numVertices)
-    void bgfx_set_dynamic_vertex_buffer(bgfx_dynamic_vertex_buffer_handle_t _handle, uint32_t _numVertices)
-    void bgfx_set_transient_vertex_buffer(const bgfx_transient_vertex_buffer_t* _tvb, uint32_t _startVertex, uint32_t _numVertices)
-    void bgfx_set_instance_data_buffer(const bgfx_instance_data_buffer_t* _idb, uint16_t _num)
-    void bgfx_set_program(bgfx_program_handle_t _handle)
-    void bgfx_set_texture(uint8_t _stage, bgfx_uniform_handle_t _sampler, bgfx_texture_handle_t _handle, uint32_t _flags)
-    void bgfx_set_texture_from_frame_buffer(uint8_t _stage, bgfx_uniform_handle_t _sampler, bgfx_frame_buffer_handle_t _handle, uint8_t _attachment, uint32_t _flags)
-    uint32_t bgfx_submit(uint8_t _id, int32_t _depth)
-    uint32_t bgfx_submit_mask(uint32_t _viewMask, int32_t _depth)
-    void bgfx_discard()
-    void bgfx_save_screen_shot(const char* _filePath)
+    void _imageSwizzleBgra8 "bgfx::imageSwizzleBgra8" (uint32_t _width, uint32_t _height, uint32_t _pitch, const void* _src, void* _dst)
+    void _imageRgba8Downsample2x2 "bgfx::imageRgba8Downsample2x2" (uint32_t _width, uint32_t _height, uint32_t _pitch, const void* _src, void* _dst)
+    uint8_t _getSupportedRenderers "bgfx::getSupportedRenderers" (_RendererType* _enum)
+    const char* _getRendererName "bgfx::getRendererName" (_RendererType _type)
 
+    cdef void _init "bgfx::init" (_RendererType _type,
+                   _CallbackI* _callback,
+                   _ReallocatorI* _reallocator)
+
+    cdef void _shutdown "bgfx::shutdown" ()
+    cdef void _reset "bgfx::reset" (uint32_t _width, uint32_t _height, uint32_t _flags = BGFX_RESET_NONE)
+    cdef uint32_t _frame "bgfx::frame" ()
+    cdef _RendererType getRendererType "bgfx::getRendererType" ()
+    cdef const _Caps* getCaps "bgfx::Caps" ()
+    cdef const _Memory* alloc "bgfx::Memory" (uint32_t _size)
+    cdef const _Memory* copy "bgfx::Memory" (const void* _data, uint32_t _size)
+    cdef const _Memory* makeRef "bgfx::Memory" (const void* _data, uint32_t _size)
+    cdef void _setDebug "bgfx::setDebug" (uint32_t _debug)
+    cdef void _dbgTextClear "bgfx::dbgTextClear" (uint8_t _attr = 0, bool _small = False)
+    cdef void _dbgTextPrintf "bgfx::dbgTextPrintf" (uint16_t _x, uint16_t _y, uint8_t _attr, const char* _format, ...)
+    cdef _IndexBufferHandle _createIndexBuffer "bgfx::createIndexBuffer" (const _Memory* _mem)
+    cdef void _destroyIndexBuffer "bgfx::destroyIndexBuffer" (_IndexBufferHandle _handle)
+    cdef _VertexBufferHandle _createVertexBuffer "bgfx::createVertexBuffer" (const _Memory* _mem, const _VertexDecl& _decl)
+    cdef void _destroyVertexBuffer "bgfx::destroyVertexBuffer" (_VertexBufferHandle _handle)
+    cdef _DynamicIndexBufferHandle _createDynamicIndexBuffer "bgfx::createDynamicIndexBuffer" (uint32_t _num)
+    cdef _DynamicIndexBufferHandle _createDynamicIndexBuffer "bgfx::createDynamicIndexBuffer" (const _Memory* _mem)
+    cdef void _updateDynamicIndexBuffer "bgfx::updateDynamicIndexBuffer" (_DynamicIndexBufferHandle _handle, const _Memory* _mem)
+    cdef void _destroyDynamicIndexBuffer "bgfx::destroyDynamicIndexBuffer" (_DynamicIndexBufferHandle _handle)
+    cdef _DynamicVertexBufferHandle _createDynamicVertexBuffer "bgfx::createDynamicVertexBuffer" (uint16_t _num, const _VertexDecl& _decl)
+    cdef _DynamicVertexBufferHandle _createDynamicVertexBuffer "bgfx::createDynamicVertexBuffer" (const _Memory* _mem, const _VertexDecl& _decl)
+    cdef void _updateDynamicVertexBuffer "bgfx::updateDynamicVertexBuffer" (_DynamicVertexBufferHandle _handle, const _Memory* _mem)
+    cdef void _destroyDynamicVertexBuffer "bgfx::destroyDynamicVertexBuffer" (_DynamicVertexBufferHandle _handle)
+    cdef bool _checkAvailTransientIndexBuffer "bgfx::checkAvailTransientIndexBuffer" (uint32_t _num)
+    cdef bool _checkAvailTransientVertexBuffer "bgfx::checkAvailTransientVertexBuffer" (uint32_t _num, const _VertexDecl& _decl)
+    cdef bool _checkAvailInstanceDataBuffer "bgfx::checkAvailInstanceDataBuffer" (uint32_t _num, uint16_t _stride)
+    cdef bool _checkAvailTransientBuffers "bgfx::checkAvailTransientBuffers" (uint32_t _numVertices, const _VertexDecl& _decl, uint32_t _numIndices)
+    cdef void _allocTransientIndexBuffer "bgfx::allocTransientIndexBuffer" (_TransientIndexBuffer* _tib, uint32_t _num)
+    cdef void _allocTransientVertexBuffer "bgfx::allocTransientVertexBuffer" (_TransientVertexBuffer* _tvb, uint32_t _num, const _VertexDecl& _decl)
+    cdef bool _allocTransientBuffers "bgfx::allocTransientBuffers" (_TransientVertexBuffer* _tvb, const _VertexDecl& _decl, uint16_t _numVertices, _TransientIndexBuffer* _tib, uint16_t _numIndices)
+    cdef const _InstanceDataBuffer* allocInstanceDataBuffer "bgfx::InstanceDataBuffer" (uint32_t _num, uint16_t _stride)
+    cdef _ShaderHandle _createShader "bgfx::createShader" (const _Memory* _mem)
+    cdef uint16_t _getShaderUniforms "bgfx::getShaderUniforms" (_ShaderHandle _handle, _UniformHandle* _uniforms = NULL, uint16_t _max = 0)
+    cdef void _destroyShader "bgfx::destroyShader" (_ShaderHandle _handle)
+    cdef _ProgramHandle _createProgram "bgfx::createProgram" (_ShaderHandle _vsh, _ShaderHandle _fsh, bool _destroyShaders = False)
+    cdef void _destroyProgram "bgfx::destroyProgram" (_ProgramHandle _handle)
+    cdef void _calcTextureSize "bgfx::calcTextureSize" (_TextureInfo& _info, uint16_t _width, uint16_t _height, uint16_t _depth, uint8_t _numMips, _TextureFormat _format)
+    cdef _TextureHandle _createTexture "bgfx::createTexture" (const _Memory* _mem, uint32_t _flags = BGFX_TEXTURE_NONE, uint8_t _skip = 0, _TextureInfo* _info = NULL)
+    cdef _TextureHandle _createTexture2D "bgfx::createTexture2D" (uint16_t _width, uint16_t _height, uint8_t _numMips, _TextureFormat _format, uint32_t _flags = BGFX_TEXTURE_NONE, const _Memory* _mem = NULL)
+    cdef _TextureHandle _createTexture3D "bgfx::createTexture3D" (uint16_t _width, uint16_t _height, uint16_t _depth, uint8_t _numMips, _TextureFormat _format, uint32_t _flags = BGFX_TEXTURE_NONE, const _Memory* _mem = NULL)
+    cdef _TextureHandle _createTextureCube "bgfx::createTextureCube" (uint16_t _size, uint8_t _numMips, _TextureFormat _format, uint32_t _flags = BGFX_TEXTURE_NONE, const _Memory* _mem = NULL)
+    cdef void _updateTexture2D "bgfx::updateTexture2D" (_TextureHandle _handle, uint8_t _mip, uint16_t _x, uint16_t _y, uint16_t _width, uint16_t _height, const _Memory* _mem, uint16_t _pitch = UINT16_MAX)
+    cdef void _updateTexture3D "bgfx::updateTexture3D" (_TextureHandle _handle, uint8_t _mip, uint16_t _x, uint16_t _y, uint16_t _z, uint16_t _width, uint16_t _height, uint16_t _depth, const _Memory* _mem)
+    cdef void _updateTextureCube "bgfx::updateTextureCube" (_TextureHandle _handle, uint8_t _side, uint8_t _mip, uint16_t _x, uint16_t _y, uint16_t _width, uint16_t _height, const _Memory* _mem, uint16_t _pitch = UINT16_MAX)
+    cdef void _destroyTexture "bgfx::destroyTexture" (_TextureHandle _handle)
+    cdef _FrameBufferHandle _createFrameBuffer "bgfx::createFrameBuffer" (uint16_t _width, uint16_t _height, _TextureFormat _format, uint32_t _textureFlags = BGFX_TEXTURE_U_CLAMP|BGFX_TEXTURE_V_CLAMP)
+    cdef _FrameBufferHandle _createFrameBuffer "bgfx::createFrameBuffer" (uint8_t _num, _TextureHandle* _handles, bool _destroyTextures = False)
+    cdef void _destroyFrameBuffer "bgfx::destroyFrameBuffer" (_FrameBufferHandle _handle)
+    cdef _UniformHandle _createUniform "bgfx::createUniform" (const char* _name, _UniformType _type, uint16_t _num = 1)
+    cdef void _destroyUniform "bgfx::destroyUniform" (_UniformHandle _handle)
+    cdef void _setViewName "bgfx::setViewName" (uint8_t _id, const char* _name)
+    cdef void _setViewRect "bgfx::setViewRect" (uint8_t _id, uint16_t _x, uint16_t _y, uint16_t _width, uint16_t _height)
+    cdef void _setViewRectMask "bgfx::setViewRectMask" (uint32_t _viewMask, uint16_t _x, uint16_t _y, uint16_t _width, uint16_t _height)
+    cdef void _setViewScissor "bgfx::setViewScissor" (uint8_t _id, uint16_t _x = 0, uint16_t _y = 0, uint16_t _width = 0, uint16_t _height = 0)
+    cdef void _setViewScissorMask "bgfx::setViewScissorMask" (uint32_t _viewMask, uint16_t _x = 0, uint16_t _y = 0, uint16_t _width = 0, uint16_t _height = 0)
+    cdef void _setViewClear "bgfx::setViewClear" (uint8_t _id, uint8_t _flags, uint32_t _rgba = 0x000000ff, float _depth = 1.0, uint8_t _stencil = 0)
+    cdef void _setViewClearMask "bgfx::setViewClearMask" (uint32_t _viewMask, uint8_t _flags, uint32_t _rgba = 0x000000ff, float _depth = 1.0, uint8_t _stencil = 0)
+    cdef void _setViewSeq "bgfx::setViewSeq" (uint8_t _id, bool _enabled)
+    cdef void _setViewSeqMask "bgfx::setViewSeqMask" (uint32_t _viewMask, bool _enabled)
+    cdef void _setViewFrameBuffer "bgfx::setViewFrameBuffer" (uint8_t _id, _FrameBufferHandle _handle)
+    cdef void _setViewFrameBufferMask "bgfx::setViewFrameBufferMask" (uint32_t _viewMask, _FrameBufferHandle _handle)
+    cdef void _setViewTransform "bgfx::setViewTransform" (uint8_t _id, const void* _view, const void* _proj)
+    cdef void _setViewTransformMask "bgfx::setViewTransformMask" (uint32_t _viewMask, const void* _view, const void* _proj)
+    cdef void _setMarker "bgfx::setMarker" (const char* _marker)
+    cdef void _setState "bgfx::setState" (uint64_t _state, uint32_t _rgba = 0)
+    cdef void _setStencil "bgfx::setStencil" (uint32_t _fstencil, uint32_t _bstencil = BGFX_STENCIL_NONE)
+    cdef uint16_t _setScissor "bgfx::setScissor" (uint16_t _x, uint16_t _y, uint16_t _width, uint16_t _height)
+    cdef void _setScissor "bgfx::setScissor" (uint16_t _cache = UINT16_MAX)
+    cdef uint32_t _setTransform "bgfx::setTransform" (const void* _mtx, uint16_t _num = 1)
+    cdef void _setTransform "bgfx::setTransform" (uint32_t _cache, uint16_t _num = 1)
+    cdef void _setUniform "bgfx::setUniform" (_UniformHandle _handle, const void* _value, uint16_t _num = 1)
+    cdef void _setIndexBuffer "bgfx::setIndexBuffer" (_IndexBufferHandle _handle, uint32_t _firstIndex = 0, uint32_t _numIndices = UINT32_MAX)
+    cdef void _setIndexBuffer "bgfx::setIndexBuffer" (_DynamicIndexBufferHandle _handle, uint32_t _firstIndex = 0, uint32_t _numIndices = UINT32_MAX)
+    cdef void _setIndexBuffer "bgfx::setIndexBuffer" (const _TransientIndexBuffer* _tib)
+    cdef void _setIndexBuffer "bgfx::setIndexBuffer" (const _TransientIndexBuffer* _tib, uint32_t _firstIndex, uint32_t _numIndices)
+    cdef void _setVertexBuffer "bgfx::setVertexBuffer" (_VertexBufferHandle _handle)
+    cdef void _setVertexBuffer "bgfx::setVertexBuffer" (_VertexBufferHandle _handle, uint32_t _startVertex, uint32_t _numVertices)
+    cdef void _setVertexBuffer "bgfx::setVertexBuffer" (_DynamicVertexBufferHandle _handle, uint32_t _numVertices = UINT32_MAX)
+    cdef void _setVertexBuffer "bgfx::setVertexBuffer" (const _TransientVertexBuffer* _tvb)
+    cdef void _setVertexBuffer "bgfx::setVertexBuffer" (const _TransientVertexBuffer* _tvb, uint32_t _startVertex, uint32_t _numVertices)
+    cdef void _setInstanceDataBuffer "bgfx::setInstanceDataBuffer" (const _InstanceDataBuffer* _idb, uint16_t _num = UINT16_MAX)
+    cdef void _setProgram "bgfx::setProgram" (_ProgramHandle _handle)
+    cdef void _setTexture "bgfx::setTexture" (uint8_t _stage, _UniformHandle _sampler, _TextureHandle _handle, uint32_t _flags = UINT32_MAX)
+    cdef void _setTexture "bgfx::setTexture" (uint8_t _stage, _UniformHandle _sampler, _FrameBufferHandle _handle, uint8_t _attachment = 0, uint32_t _flags = UINT32_MAX)
+    cdef uint32_t _submit "bgfx::submit" (uint8_t _id, int32_t _depth = 0)
+    cdef uint32_t _submitMask "bgfx::submitMask" (uint32_t _viewMask, int32_t _depth = 0)
+    cdef void _discard "bgfx::discard" ()
+    cdef void _saveScreenShot "bgfx::saveScreenShot" (const char* _filePath)
+
+"""
 
 cdef class _callback(bgfx_callback_interface_vtbl_t):
     cdef void __stdcall fatal(bgfx_fatal_t code, const char* _str):
@@ -387,27 +358,6 @@ cdef class _callback(bgfx_callback_interface_vtbl_t):
     cdef void __stdcall capture_frame(const void* _data, uint32_t _size)
 
 
-class Renderer:
-    Null = BGFX_RENDERER_TYPE_NULL
-    Direct3D9 = BGFX_RENDERER_TYPE_DIRECT3D9
-    Direct3D11 = BGFX_RENDERER_TYPE_DIRECT3D11
-    OpenGLES = BGFX_RENDERER_TYPE_OPENGLES
-    OpenGL = BGFX_RENDERER_TYPE_OPENGL
-
-def init(renderer=BGFX_RENDERER_TYPE_COUNT, callback=None, reallocator=None):
-    cdef bgfx_callback_interface_t* _callback = NULL
-    cdef bgfx_reallocator_interface_t* _reallocator = NULL
-
-    if renderer is None:
-        renderer = BGFX_RENDERER_TYPE_COUNT
-
-    if callback is not None:
-        pass
-
-    if reallocator is not None:
-        pass
-
-    bgfx_init(renderer, _callback, _reallocator)
 
 def reset(width, height, _reset):
     bgfx_reset(width, height, _reset)
@@ -438,81 +388,122 @@ def frame():
     bgfx_frame()
 """
 
+IF WINDOWS:
+    cdef extern from "windows.h":
+        ctypedef void* HWND
+
+#cdef extern from "bgfxplatform.h":
+#    IF WINDOWS:
+#        cdef extern void _winSetHwnd "bgfx::winSetHwnd" (HWND _window)
+
+cdef extern from "bgfx_helper.h":
+    void _set_window "set_window" (HWND window)
+
 class Fatal:
-    DebugCheck = _DebugCheck
-    MinimumRequiredSpace = _MinimumRequiredSpecs
-    InvalidShader = _InvalidShader
-    UnableToInitialize = _UnableToInitialize
-    UnableToCreateTexture = _UnableToCreateTexture
+    DebugCheck              = _DebugCheck
+    MinimumRequiredSpace    = _MinimumRequiredSpecs
+    InvalidShader           = _InvalidShader
+    UnableToInitialize      = _UnableToInitialize
+    UnableToCreateTexture   = _UnableToCreateTexture
 
 class RendererType:
-    Null = _Null
-    Direct3D9 = _Direct3D9
-    Direct3D11 = _Direct3D11
-    OpenGLES = _OpenGLES
-    OpenGL = _OpenGL
-
-    Count = _RendererTypeCount
+    Null                    = _Null
+    Direct3D9               = _Direct3D9
+    Direct3D11              = _Direct3D11
+    OpenGLES                = _OpenGLES
+    OpenGL                  = _OpenGL
+    Count                   = _RendererTypeCount
 
 class Attrib:
-    Position = _Position
-    Normal = _Normal
-    Tangent = _Tangent
-    Color0 = _Color0
-    Color1 = _Color1
-    Indices = _Indices
-    Weight = _Weight
-    TexCoord0 = _TexCoord0
-    TexCoord1 = _TexCoord1
-    TexCoord2 = _TexCoord2
-    TexCoord3 = _TexCoord3
-    TexCoord4 = _TexCoord4
-    TexCoord5 = _TexCoord5
-    TexCoord6 = _TexCoord6
-    TexCoord7 = _TexCoord7
-    Count = _AttribCount
+    Position                = _Position
+    Normal                  = _Normal
+    Tangent                 = _Tangent
+    Color0                  = _Color0
+    Color1                  = _Color1
+    Indices                 = _Indices
+    Weight                  = _Weight
+    TexCoord0               = _TexCoord0
+    TexCoord1               = _TexCoord1
+    TexCoord2               = _TexCoord2
+    TexCoord3               = _TexCoord3
+    TexCoord4               = _TexCoord4
+    TexCoord5               = _TexCoord5
+    TexCoord6               = _TexCoord6
+    TexCoord7               = _TexCoord7
+    Count                   = _AttribCount
 
 class AttribType:
-    Uint8 = _Uint8
-    Int16 = _Int16
-    Half = _Half
-    Float = _Float
-    Count = _AttribCount
+    Uint8                   = _Uint8
+    Int16                   = _Int16
+    Half                    = _Half
+    Float                   = _Float
+    Count                   = _AttribCount
 
 class TextureFormat:
-    BC1 = _BC1
-    BC2 = _BC2
-    BC3 = _BC3
-    BC4 = _BC4
-    BC5 = _BC5
-    ETC1 = _ETC1
-    ETC2 = _ETC2
-    ETC2A = _ETC2A
-    ETC2A1 = _ETC2A1
-    PTC12 = _PTC12
-    PTC14 = _PTC14
-    PTC12A = _PTC12A
-    PTC14A = _PTC14A
-    PTC22 = _PTC22
-    PTC24 = _PTC24
-    Unknown = _Unknown
-    R8 = _R8
-    R16 = _R16
-    R16F = _R16F
-    BGRA8 = _BGRA8
-    RGBA16 = _RGBA16
-    RGBA16F = _RGBA16F
-    R5G6B5 = _R5G6B5
-    RGBA4 = _RGBA4
-    RGB5A1 = _RGB5A1
-    RGB10A2 = _RGB10A2
-    UnknownDepth = _UnknownDepth
-    D16 = _D16
-    D24 = _D24
-    D24S8 = _D24S8
-    D32 = _D32
-    D16F = _D16F
-    D24F = _D24F
-    D32F = _D32F
-    D0S8 = _D0S8
-    Count = _TextureFormatCount
+    BC1                     = _BC1
+    BC2                     = _BC2
+    BC3                     = _BC3
+    BC4                     = _BC4
+    BC5                     = _BC5
+    ETC1                    = _ETC1
+    ETC2                    = _ETC2
+    ETC2A                   = _ETC2A
+    ETC2A1                  = _ETC2A1
+    PTC12                   = _PTC12
+    PTC14                   = _PTC14
+    PTC12A                  = _PTC12A
+    PTC14A                  = _PTC14A
+    PTC22                   = _PTC22
+    PTC24                   = _PTC24
+    Unknown                 = _Unknown
+    R8                      = _R8
+    R16                     = _R16
+    R16F                    = _R16F
+    BGRA8                   = _BGRA8
+    RGBA16                  = _RGBA16
+    RGBA16F                 = _RGBA16F
+    R5G6B5                  = _R5G6B5
+    RGBA4                   = _RGBA4
+    RGB5A1                  = _RGB5A1
+    RGB10A2                 = _RGB10A2
+    UnknownDepth            = _UnknownDepth
+    D16                     = _D16
+    D24                     = _D24
+    D24S8                   = _D24S8
+    D32                     = _D32
+    D16F                    = _D16F
+    D24F                    = _D24F
+    D32F                    = _D32F
+    D0S8                    = _D0S8
+    Count                   = _TextureFormatCount
+
+class UniformType:
+    Uniform1i               = _Uniform1i
+    Uniform1f               = _Uniform1f
+    End                     = _End
+    Uniform1iv              = _Uniform1iv
+    Uniform1fv              = _Uniform1fv
+    Uniform2fv              = _Uniform2fv
+    Uniform3fv              = _Uniform3fv
+    Uniform4fv              = _Uniform4fv
+    Uniform3x3fv            = _Uniform3x3fv
+    Uniform4x4fv            = _Uniform4x4fv
+    Count                   = _UniformTypeCount
+
+
+def set_window(window):
+    IF WINDOWS:
+        cdef HWND _window
+        _window = <HWND>window
+    _set_window(_window)
+
+def init(renderer_type = RendererType.Count, callback = None, reallocator = None):
+    cdef _CallbackI* _callback = NULL
+    cdef _ReallocatorI* _reallocator = NULL
+
+    if callback is not None:
+        _callback = NULL
+    if reallocator is not None:
+        _reallocator = NULL
+
+    _init(renderer_type, _callback, _reallocator)

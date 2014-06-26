@@ -1,11 +1,14 @@
 import bgfx
 import pyglet
 
+window = pyglet.window.Window()
 
 width = 1280
 height = 720
 
-bgfx.init()
+bgfx.set_window(window._view_hwnd)
+
+bgfx.init(bgfx.RendererType.OpenGL)
 
 bgfx.reset(width, height, bgfx.BGFX_RESET_VSYNC)
 bgfx.set_debug(bgfx.BGFX_RESET_VSYNC)
