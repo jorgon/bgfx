@@ -1,5 +1,3 @@
-from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t, int32_t, UINT32_MAX, UINT16_MAX
-from libcpp cimport bool
 
 include "platform.pxi"
 include "externs.pxi"
@@ -129,7 +127,7 @@ class UniformType:
 
 
 def set_window(window):
-    IF WINDOWS:
+    IF PYBGFX_WINDOWS:
         cdef HWND _window
         _window = <HWND>window
     _set_window(_window)
@@ -144,3 +142,9 @@ def init(renderer_type = RendererType.Count, callback = None, reallocator = None
         _reallocator = NULL
 
     _init(renderer_type, _callback, _reallocator)
+
+def test_getdc(hwnd):
+    cdef HWND _hwnd = <HWND> hwnd
+    cdef HDC _hdc = GetDC(_hwnd)
+
+    return GetLastError()

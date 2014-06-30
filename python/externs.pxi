@@ -1,5 +1,61 @@
+from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t, int32_t, UINT32_MAX, UINT16_MAX
+from libcpp cimport bool
 
 include "defines.pxi"
+
+IF PYBGFX_SDL:
+    ctypedef uint32_t Uint32
+    ctypedef uint16_t Uint16
+    ctypedef bool SDL_bool
+
+    cdef extern from "SDL2/SDL.h":
+        struct SDL_Surface:
+            pass
+
+        struct SDL_Rect:
+            pass
+
+        struct SDL_DisplayMode:
+            pass
+
+        struct SDL_Surface:
+            pass
+
+        struct SDL_WindowShaper:
+            pass
+
+        struct SDL_WindowUserData:
+            pass
+
+        struct SDL_Window:
+            const void * magic
+            Uint32 id
+            char * title
+            SDL_Surface * icon
+            int x
+            int y
+            int w
+            int h
+            int min_w
+            int min_h
+            int max_w
+            int max_h
+            Uint32 flags
+            Uint32 last_fullscreen_flags
+            SDL_Rect windowed
+            SDL_DisplayMode fullscreen_mode
+            float brightness
+            Uint16 * gamma
+            Uint16 * saved_gamma
+            SDL_Surface * surface
+            SDL_bool surface_valid
+            SDL_bool is_destroying
+            SDL_WindowShaper * shaper
+            SDL_WindowUserData * data
+            void * driverdata
+            SDL_Window * prev
+            SDL_Window * next
+
 
 cdef extern from "bx/allocator.h" namespace "bx":
     cdef struct _AllocatorI "bx::AllocatorI":
@@ -337,10 +393,21 @@ cdef extern from "bgfx.h" namespace "bgfx":
     cdef void _discard "bgfx::discard" ()
     cdef void _saveScreenShot "bgfx::saveScreenShot" (const char* _filePath)
 
-IF WINDOWS:
+IF PYBGFX_WINDOWS:
     cdef extern from "windows.h":
         ctypedef void* HWND
+        ctypedef void* HDC
+        ctypedef long DWORD
+
+        cdef HDC GetDC(HWND wnd)
+        cdef DWORD GetLastError()
+
+cdef extern from "bgfxplatform.h":
+    IF PYBGFX_WINDOWS:
+        void winSetHwnd(HWND _window)
+    IF PYBGFX_SDL:
+        bool sdlSetWindow(SDL_Window* _window)
 
 cdef extern from "bgfx_helper.h":
-    IF WINDOWS:
+    IF PYBGFX_WINDOWS:
         void _set_window "set_window" (HWND window)
