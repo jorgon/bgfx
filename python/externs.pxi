@@ -67,7 +67,7 @@ cdef extern from "bx/allocator.h" namespace "bx":
 
 
 cdef extern from "bgfx.h" namespace "bgfx":
-    cdef enum _Fatal            "Fatal":
+    cdef enum _Fatal            "bgfx::Fatal::Enum":
         _DebugCheck             "bgfx::Fatal::DebugCheck"
         _MinimumRequiredSpecs   "bgfx::Fatal::MinimumRequiredSpecs"
         _InvalidShader          "bgfx::Fatal::InvalidShader"
@@ -83,7 +83,7 @@ cdef extern from "bgfx.h" namespace "bgfx":
 
         _RendererTypeCount      "bgfx::RendererType::Count"
 
-    cdef enum _Attrib           "Attrib":
+    cdef enum _Attrib           "bgfx::Attrib::Enum":
         _Position               "bgfx::Attrib::Position"
         _Normal                 "bgfx::Attrib::Normal"
         _Tangent                "bgfx::Attrib::Tangent"
@@ -102,14 +102,14 @@ cdef extern from "bgfx.h" namespace "bgfx":
 
         _AttribCount            "bgfx::Attrib::Count"
 
-    cdef enum _AttribType       "AttribType":
+    cdef enum _AttribType       "bgfx::AttribType::Enum":
         _Uint8                  "bgfx::AttribType::Uint8"
         _Int16                  "bgfx::AttribType::Int16"
         _Half                   "bgfx::AttribType::Half"
         _Float                  "bgfx::AttribType::Float"
         _AttribTypeCount        "bgfx::AttribType::Count"
 
-    cdef enum _TextureFormat    "TextureFormat":
+    cdef enum _TextureFormat    "bgfx::TextureFormat::Enum":
         _BC1                    "bgfx::TextureFormat::BC1"
         _BC2                    "bgfx::TextureFormat::BC2"
         _BC3                    "bgfx::TextureFormat::BC3"
@@ -147,7 +147,7 @@ cdef extern from "bgfx.h" namespace "bgfx":
         _D0S8                   "bgfx::TextureFormat::D0S8"
         _TextureFormatCount     "bgfx::TextureFormat::Count"
 
-    cdef enum _UniformType      "UniformType":
+    cdef enum _UniformType      "bgfx::UniformType::Enum":
         _Uniform1i              "bgfx::UniformType::Uniform1i"
         _Uniform1f              "bgfx::UniformType::Uniform1f"
         _End                    "bgfx::UniformType::End"
@@ -254,7 +254,7 @@ cdef extern from "bgfx.h" namespace "bgfx":
         uint8_t bitsPerPixel
 
 
-    cdef struct _VertexDecl "bgfx::VertexDecl":
+    cdef cppclass _VertexDecl "bgfx::VertexDecl":
         _VertexDecl& begin(_RendererType _renderer)
         void end()
 
@@ -275,7 +275,7 @@ cdef extern from "bgfx.h" namespace "bgfx":
                                          _Attrib _attr,
                                          const _VertexDecl& _decl,
                                          void* _data,
-                                         uint32_t _index = 0)
+                                         uint32_t _index)
 
     cdef void _vertexUnpack "bgfx::vertexUnpack" (float _output[4],
                                             _Attrib _attr,

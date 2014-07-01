@@ -2,38 +2,6 @@
 include "platform.pxi"
 include "externs.pxi"
 
-"""
-
-def reset(width, height, _reset):
-    bgfx_reset(width, height, _reset)
-
-def shutdown():
-    bgfx_shutdown()
-
-def set_debug(debug):
-    bgfx_set_debug(debug)
-
-def set_view_clear(_id, _flags, _rgba, _depth, _stencil):
-    bgfx_set_view_clear(_id, _flags, _rgba, _depth, _stencil)
-
-def set_view_rect(_id, x, y, width, height):
-    bgfx_set_view_rect(_id, x, y, width, height)
-
-def submit(_id, depth):
-    bgfx_submit(_id, depth)
-
-def debug_text_clear(attr, small):
-    bgfx_dbg_text_clear(attr, small)
-
-def debug_text_printf(x, y, attr, format, *args):
-    s = format.format(*args)
-    bgfx_dbg_text_printf(x, y, attr, s)
-
-def frame():
-    bgfx_frame()
-"""
-
-
 class Fatal:
     DebugCheck              = _DebugCheck
     MinimumRequiredSpace    = _MinimumRequiredSpecs
@@ -146,6 +114,15 @@ class Debug:
     Stats                   = BGFX_DEBUG_STATS
     Text                    = BGFX_DEBUG_TEXT
 
+cdef class VertexDecl:
+    cdef _VertexDecl obj
+
+    def __cinit__(self):
+        #self.ptr = new _VertexDecl()
+        pass
+    def __dealloc__(self):
+        del self.ptr
+
 IF PYBGFX_WINDOWS:
     def winSetHwnd(hwnd):
         cdef size_t size
@@ -153,6 +130,22 @@ IF PYBGFX_WINDOWS:
         size = <size_t> hwnd
         _window = <HWND> size
         _winSetHwnd(_window)
+
+
+def vertex_pack(point, input_normalized, attr, decl, data, index=0):
+    cdef float _input[4]
+    cdef bool _inputNormalized = <bool> input_normalized
+    cdef _Attrib _attr = <_Attrib> attr
+    cdef VertexDecl d = <VertexDecl> decl
+    cdef _VertexDecl _decl = d.obj
+
+    cdef void* _data = <void*> data
+    cdef uint32_t _index = <uint32_t> index
+
+    for i in range(4):
+        _input[i] = <float> point[i]
+
+    _vertexPack(_input, _inputNormalized, _attr, _decl, _data, _index)
 
 
 def init(renderer_type = RendererType.Count, callback = None, reallocator = None):
@@ -186,7 +179,7 @@ def reset(width, height, flags=None):
 def set_debug(flag):
     cdef uint32_t _flag
 
-    _flag = <uint32_t> _flag
+    _flag = <uint32_t> flag
     _setDebug(_flag)
 
 def set_view_clear(id, rgba=None, depth=None, stencil=None):
