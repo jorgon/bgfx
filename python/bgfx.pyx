@@ -125,21 +125,34 @@ class UniformType:
     Uniform4x4fv            = _Uniform4x4fv
     Count                   = _UniformTypeCount
 
+class Reset:
+    NONE                    = BGFX_RESET_NONE
+    Fullscreen              = BGFX_RESET_FULLSCREEN
+    Shift                   = BGFX_RESET_FULLSCREEN_SHIFT
+    Mask                    = BGFX_RESET_FULLSCREEN_MASK
+    MSAAx2                  = BGFX_RESET_MSAA_X2
+    MSAAx4                  = BGFX_RESET_MSAA_X4
+    MSAAx8                  = BGFX_RESET_MSAA_X8
+    MSAAx16                 = BGFX_RESET_MSAA_X16
+    MSAAShift               = BGFX_RESET_MSAA_SHIFT
+    MSAAMask                = BGFX_RESET_MSAA_MASK
+    VSync                   = BGFX_RESET_VSYNC
+    Capture                 = BGFX_RESET_CAPTURE
+
+class Debug:
+    NONE                    = BGFX_DEBUG_NONE
+    Wireframe               = BGFX_DEBUG_WIREFRAME
+    IFH                     = BGFX_DEBUG_IFH
+    Stats                   = BGFX_DEBUG_STATS
+    Text                    = BGFX_DEBUG_TEXT
 
 IF PYBGFX_WINDOWS:
-
     def winSetHwnd(hwnd):
         cdef size_t size
         cdef HWND _window
         size = <size_t> hwnd
         _window = <HWND> size
         _winSetHwnd(_window)
-
-def set_window(window):
-    IF PYBGFX_WINDOWS:
-        cdef HWND _window
-        _window = <HWND>window
-        _set_window(_window)
 
 
 def init(renderer_type = RendererType.Count, callback = None, reallocator = None):
@@ -153,10 +166,86 @@ def init(renderer_type = RendererType.Count, callback = None, reallocator = None
 
     _init(renderer_type, _callback, _reallocator)
 
-def test_getdc(hwnd):
-    cdef HWND _hwnd = <HWND> hwnd
-    cdef HDC _hdc = GetDC(_hwnd)
+def shutdown():
+    _shutdown()
 
-    #if int(_hdc) == 0:
-    return GetLastError()
-    #return 0
+def reset(width, height, flags=None):
+    cdef uint32_t _width
+    cdef uint32_t _height
+    cdef uint32_t _flags
+
+    _width = width
+    _height = height
+
+    _flags = BGFX_RESET_NONE
+    if flags is not None:
+        _flags = <uint32_t> flags
+
+    _reset(_width, _height, _flags)
+
+def set_debug(flag):
+    cdef uint32_t _flag
+
+    _flag = <uint32_t> _flag
+    _setDebug(_flag)
+
+def set_view_clear(id, rgba=None, depth=None, stencil=None):
+    cdef uint8_t _id
+    cdef uint8_t _flags = 0
+    cdef uint32_t _rgba
+    cdef float _depth
+    cdef uint8_t _stencil
+
+    _id = <uint8_t> id
+
+    if rgba is None:
+        _rgba = 0x000000ff
+    else:
+        _rgba = <uint32_t> rgba
+        _flags |= BGFX_CLEAR_COLOR_BIT
+
+    if depth is None:
+        _depth = 1.0
+    else:
+        _depth  = <float> depth
+        _flags |= BGFX_CLEAR_DEPTH_BIT
+
+    if stencil is None:
+        _stencil = 0
+    else:
+        _stencil  = <uint8_t> stencil
+        _flags |= BGFX_CLEAR_STENCIL_BIT
+
+    _setViewClear(_id, _flags, _rgba, _depth, _stencil)
+
+def set_view_rect(id, x, y, width, height):
+    cdef uint8_t _id = <uint8_t> id
+    cdef uint16_t _x = <uint16_t> x
+    cdef uint16_t _y = <uint16_t> y
+    cdef uint16_t _width = <uint16_t> width
+    cdef uint16_t _height = <uint16_t> height
+
+    _setViewRect(_id, _x, _y, _width, _height)
+
+def submit(id):
+    cdef uint8_t _id = <uint8_t> id
+    _submit(_id)
+
+def frame():
+    _frame()
+
+def debug_text_clear(attr=0, small=False):
+    cdef uint8_t _attr = <uint8_t> attr
+    cdef bool _small = <bool> small
+
+    _dbgTextClear(_attr, _small)
+
+def debug_text_printf(x, y, attr, *text):
+    text = " ".join(text).encode("ascii")
+
+    cdef uint16_t _x = <uint16_t> x
+    cdef uint16_t _y = <uint16_t> y
+    cdef uint8_t _attr = <uint8_t> attr
+    cdef const char* _format = <const char*> text
+
+    _dbgTextPrintf(_x, _y, _attr, _format)

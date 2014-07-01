@@ -295,17 +295,17 @@ cdef extern from "bgfx.h" namespace "bgfx":
                                                      uint16_t _num,
                                                      float _epsilon = 0.001)
 
-    void _imageSwizzleBgra8 "bgfx::imageSwizzleBgra8" (uint32_t _width, uint32_t _height, uint32_t _pitch, const void* _src, void* _dst)
-    void _imageRgba8Downsample2x2 "bgfx::imageRgba8Downsample2x2" (uint32_t _width, uint32_t _height, uint32_t _pitch, const void* _src, void* _dst)
-    uint8_t _getSupportedRenderers "bgfx::getSupportedRenderers" (_RendererType* _enum)
-    const char* _getRendererName "bgfx::getRendererName" (_RendererType _type)
+    cdef void _imageSwizzleBgra8 "bgfx::imageSwizzleBgra8" (uint32_t _width, uint32_t _height, uint32_t _pitch, const void* _src, void* _dst)
+    cdef void _imageRgba8Downsample2x2 "bgfx::imageRgba8Downsample2x2" (uint32_t _width, uint32_t _height, uint32_t _pitch, const void* _src, void* _dst)
+    cdef uint8_t _getSupportedRenderers "bgfx::getSupportedRenderers" (_RendererType* _enum)
+    cdef const char* _getRendererName "bgfx::getRendererName" (_RendererType _type)
 
     cdef void _init "bgfx::init" (_RendererType _type,
                    _CallbackI* _callback,
                    _ReallocatorI* _reallocator)
 
     cdef void _shutdown "bgfx::shutdown" ()
-    cdef void _reset "bgfx::reset" (uint32_t _width, uint32_t _height, uint32_t _flags = BGFX_RESET_NONE)
+    cdef void _reset "bgfx::reset" (uint32_t _width, uint32_t _height, uint32_t _flags)
     cdef uint32_t _frame "bgfx::frame" ()
     cdef _RendererType getRendererType "bgfx::getRendererType" ()
     cdef const _Caps* getCaps "bgfx::Caps" ()
@@ -313,7 +313,7 @@ cdef extern from "bgfx.h" namespace "bgfx":
     cdef const _Memory* copy "bgfx::Memory" (const void* _data, uint32_t _size)
     cdef const _Memory* makeRef "bgfx::Memory" (const void* _data, uint32_t _size)
     cdef void _setDebug "bgfx::setDebug" (uint32_t _debug)
-    cdef void _dbgTextClear "bgfx::dbgTextClear" (uint8_t _attr = 0, bool _small = False)
+    cdef void _dbgTextClear "bgfx::dbgTextClear" (uint8_t _attr, bool _small)
     cdef void _dbgTextPrintf "bgfx::dbgTextPrintf" (uint16_t _x, uint16_t _y, uint8_t _attr, const char* _format, ...)
     cdef _IndexBufferHandle _createIndexBuffer "bgfx::createIndexBuffer" (const _Memory* _mem)
     cdef void _destroyIndexBuffer "bgfx::destroyIndexBuffer" (_IndexBufferHandle _handle)
@@ -359,7 +359,7 @@ cdef extern from "bgfx.h" namespace "bgfx":
     cdef void _setViewRectMask "bgfx::setViewRectMask" (uint32_t _viewMask, uint16_t _x, uint16_t _y, uint16_t _width, uint16_t _height)
     cdef void _setViewScissor "bgfx::setViewScissor" (uint8_t _id, uint16_t _x = 0, uint16_t _y = 0, uint16_t _width = 0, uint16_t _height = 0)
     cdef void _setViewScissorMask "bgfx::setViewScissorMask" (uint32_t _viewMask, uint16_t _x = 0, uint16_t _y = 0, uint16_t _width = 0, uint16_t _height = 0)
-    cdef void _setViewClear "bgfx::setViewClear" (uint8_t _id, uint8_t _flags, uint32_t _rgba = 0x000000ff, float _depth = 1.0, uint8_t _stencil = 0)
+    cdef void _setViewClear "bgfx::setViewClear" (uint8_t _id, uint8_t _flags, uint32_t _rgba, float _depth, uint8_t _stencil)
     cdef void _setViewClearMask "bgfx::setViewClearMask" (uint32_t _viewMask, uint8_t _flags, uint32_t _rgba = 0x000000ff, float _depth = 1.0, uint8_t _stencil = 0)
     cdef void _setViewSeq "bgfx::setViewSeq" (uint8_t _id, bool _enabled)
     cdef void _setViewSeqMask "bgfx::setViewSeqMask" (uint32_t _viewMask, bool _enabled)

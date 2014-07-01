@@ -33,6 +33,3 @@ struct callback_helper : bgfx::CallbackI
     virtual void captureFrame(const void* _data, uint32_t _size);
 };
 
-#ifdef BX_PLATFORM_WINDOWS
-void set_window(HWND window);
-#endif
