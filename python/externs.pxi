@@ -394,6 +394,7 @@ cdef extern from "bgfx.h" namespace "bgfx":
     cdef void _saveScreenShot "bgfx::saveScreenShot" (const char* _filePath)
 
 IF PYBGFX_WINDOWS:
+
     cdef extern from "windows.h":
         ctypedef void* HWND
         ctypedef void* HDC
@@ -404,7 +405,7 @@ IF PYBGFX_WINDOWS:
 
 cdef extern from "bgfxplatform.h":
     IF PYBGFX_WINDOWS:
-        void winSetHwnd(HWND _window)
+        void _winSetHwnd "bgfx::winSetHwnd"(HWND _window)
     IF PYBGFX_SDL:
         bool sdlSetWindow(SDL_Window* _window)
 

@@ -126,11 +126,21 @@ class UniformType:
     Count                   = _UniformTypeCount
 
 
+IF PYBGFX_WINDOWS:
+
+    def winSetHwnd(hwnd):
+        cdef size_t size
+        cdef HWND _window
+        size = <size_t> hwnd
+        _window = <HWND> size
+        _winSetHwnd(_window)
+
 def set_window(window):
     IF PYBGFX_WINDOWS:
         cdef HWND _window
         _window = <HWND>window
-    _set_window(_window)
+        _set_window(_window)
+
 
 def init(renderer_type = RendererType.Count, callback = None, reallocator = None):
     cdef _CallbackI* _callback = NULL
@@ -147,4 +157,6 @@ def test_getdc(hwnd):
     cdef HWND _hwnd = <HWND> hwnd
     cdef HDC _hdc = GetDC(_hwnd)
 
+    #if int(_hdc) == 0:
     return GetLastError()
+    #return 0

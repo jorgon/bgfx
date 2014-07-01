@@ -48,11 +48,12 @@ void callback_helper::captureEnd()
 void callback_helper::captureFrame(const void* _data, uint32_t _size)
 {
 }
-
+#include <stdio.h>
 
 #ifdef BX_PLATFORM_WINDOWS
 void set_window(HWND window)
 {
+    printf("%d\r\n", window);
     bgfx::winSetHwnd(window);
 }
 #endif

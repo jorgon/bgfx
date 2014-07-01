@@ -5,20 +5,22 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 import subprocess
 #subprocess.Popen(["c:/python33/python.exe", "setup.py", "build_ext",  "--inplace", "--force"], cwd=os.path.dirname(os.path.dirname(os.path.dirname(__file__)))).wait()
 
-os.environ['PYSDL2_DLL_PATH'] = "C:\\Users\\Jorgon\\src\\bgfx\\python\\examples\\third_party"
-
+#os.environ['PYSDL2_DLL_PATH'] = "C:\\Users\\Jorgon\\src\\bgfx\\python\\examples\\third_party"
+os.environ['PYSDL2_DLL_PATH'] = "C:\\Users\\Jorgon\\src\\SDL2\\VisualC\\SDL\\Win32\\Debug"
 import sdl2
 import sdl2.ext
 
 import bgfx
 
 sdl2.ext.init()
-window = sdl2.ext.Window("Hello World", size=(640, 480))
+window = sdl2.ext.Window("Hello World", size=(640, 480), flags=sdl2.SDL_WINDOW_OPENGL)
 window.show()
 info = sdl2.syswm.SDL_SysWMinfo()
 sdl2.SDL_VERSION(info.version)
 sdl2.SDL_GetWindowWMInfo(window.window, info)
 
+print(hex(info.info.win.window))
+win = info.info.win.window
 ret = bgfx.test_getdc(info.info.win.window)
 
 
@@ -38,7 +40,7 @@ height = 720
 
 
 
-bgfx.set_window(info.info.win.window)
+bgfx.winSetHwnd(info.info.win.window)
 
 bgfx.init(bgfx.RendererType.OpenGL)
 #bgfx.init()
