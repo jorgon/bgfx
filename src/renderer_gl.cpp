@@ -5,7 +5,7 @@
 
 #include "bgfx_p.h"
 
-#if (BGFX_CONFIG_RENDERER_OPENGLES|BGFX_CONFIG_RENDERER_OPENGL)
+#if (BGFX_CONFIG_RENDERER_OPENGLES || BGFX_CONFIG_RENDERER_OPENGL)
 #	include "renderer_gl.h"
 #	include <bx/timer.h>
 #	include <bx/uint32_t.h>
@@ -38,11 +38,12 @@ namespace bgfx
 		"Point",
 	};
 
-	static const char* s_attribName[Attrib::Count] =
+	static const char* s_attribName[] =
 	{
 		"a_position",
 		"a_normal",
 		"a_tangent",
+		"a_bitangent",
 		"a_color0",
 		"a_color1",
 		"a_indices",
@@ -56,6 +57,7 @@ namespace bgfx
 		"a_texcoord6",
 		"a_texcoord7",
 	};
+	BX_STATIC_ASSERT(Attrib::Count == BX_COUNTOF(s_attribName) );
 
 	static const char* s_instanceDataName[BGFX_CONFIG_MAX_INSTANCE_DATA_COUNT] =
 	{
@@ -64,6 +66,13 @@ namespace bgfx
 		"i_data2",
 		"i_data3",
 		"i_data4",
+	};
+
+	static const GLenum s_access[Access::Count] =
+	{
+		GL_READ_ONLY,
+		GL_WRITE_ONLY,
+		GL_READ_WRITE,
 	};
 
 	static const GLenum s_attribType[AttribType::Count] =
@@ -169,13 +178,15 @@ namespace bgfx
 		bool m_supported;
 	};
 
-	static TextureFormatInfo s_textureFormat[TextureFormat::Count] =
+	static TextureFormatInfo s_textureFormat[] =
 	{
 		{ GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,            GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,            GL_ZERO,                        false }, // BC1
 		{ GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,            GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,            GL_ZERO,                        false }, // BC2
 		{ GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,            GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,            GL_ZERO,                        false }, // BC3
 		{ GL_COMPRESSED_LUMINANCE_LATC1_EXT,           GL_COMPRESSED_LUMINANCE_LATC1_EXT,           GL_ZERO,                        false }, // BC4
 		{ GL_COMPRESSED_LUMINANCE_ALPHA_LATC2_EXT,     GL_COMPRESSED_LUMINANCE_ALPHA_LATC2_EXT,     GL_ZERO,                        false }, // BC5
+		{ GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_ARB,     GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_ARB,     GL_ZERO,                        false }, // BC6H
+		{ GL_COMPRESSED_RGBA_BPTC_UNORM_ARB,           GL_COMPRESSED_RGBA_BPTC_UNORM_ARB,           GL_ZERO,                        false }, // BC7
 		{ GL_ETC1_RGB8_OES,                            GL_ETC1_RGB8_OES,                            GL_ZERO,                        false }, // ETC1
 		{ GL_COMPRESSED_RGB8_ETC2,                     GL_COMPRESSED_RGB8_ETC2,                     GL_ZERO,                        false }, // ETC2
 		{ GL_COMPRESSED_RGBA8_ETC2_EAC,                GL_COMPRESSED_RGBA8_ETC2_EAC,                GL_ZERO,                        false }, // ETC2A
@@ -187,12 +198,22 @@ namespace bgfx
 		{ GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG,         GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG,         GL_ZERO,                        false }, // PTC22
 		{ GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG,         GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG,         GL_ZERO,                        false }, // PTC24
 		{ GL_ZERO,                                     GL_ZERO,                                     GL_ZERO,                        true  }, // Unknown
+		{ GL_ZERO,                                     GL_ZERO,                                     GL_ZERO,                        true  }, // R1
 		{ GL_LUMINANCE,                                GL_LUMINANCE,                                GL_UNSIGNED_BYTE,               true  }, // R8
 		{ GL_R16,                                      GL_RED,                                      GL_UNSIGNED_SHORT,              true  }, // R16
 		{ GL_R16F,                                     GL_RED,                                      GL_HALF_FLOAT,                  true  }, // R16F
+		{ GL_R32UI,                                    GL_RED,                                      GL_UNSIGNED_INT,                true  }, // R32
+		{ GL_R32F,                                     GL_RED,                                      GL_FLOAT,                       true  }, // R32F
+		{ GL_RG8,                                      GL_RG,                                       GL_UNSIGNED_BYTE,               true  }, // RG8
+		{ GL_RG16,                                     GL_RG,                                       GL_UNSIGNED_SHORT,              true  }, // RG16
+		{ GL_RG16F,                                    GL_RG,                                       GL_FLOAT,                       true  }, // RG16F
+		{ GL_RG32UI,                                   GL_RG,                                       GL_UNSIGNED_INT,                true  }, // RG32
+		{ GL_RG32F,                                    GL_RG,                                       GL_FLOAT,                       true  }, // RG32F
 		{ GL_RGBA,                                     GL_RGBA,                                     GL_UNSIGNED_BYTE,               true  }, // BGRA8
 		{ GL_RGBA16,                                   GL_RGBA,                                     GL_UNSIGNED_BYTE,               true  }, // RGBA16
 		{ GL_RGBA16F,                                  GL_RGBA,                                     GL_HALF_FLOAT,                  true  }, // RGBA16F
+		{ GL_RGBA32UI,                                 GL_RGBA,                                     GL_UNSIGNED_INT,                true  }, // RGBA32
+		{ GL_RGBA32F,                                  GL_RGBA,                                     GL_FLOAT,                       true  }, // RGBA32F
 		{ GL_RGB565,                                   GL_RGB,                                      GL_UNSIGNED_SHORT_5_6_5,        true  }, // R5G6B5
 		{ GL_RGBA4,                                    GL_RGBA,                                     GL_UNSIGNED_SHORT_4_4_4_4,      true  }, // RGBA4
 		{ GL_RGB5_A1,                                  GL_RGBA,                                     GL_UNSIGNED_SHORT_5_5_5_1,      true  }, // RGB5A1
@@ -207,6 +228,59 @@ namespace bgfx
 		{ GL_DEPTH_COMPONENT32F,                       GL_DEPTH_COMPONENT,                          GL_FLOAT,                       false }, // D32F
 		{ GL_STENCIL_INDEX8,                           GL_DEPTH_STENCIL,                            GL_UNSIGNED_BYTE,               false }, // D0S8
 	};
+	BX_STATIC_ASSERT(TextureFormat::Count == BX_COUNTOF(s_textureFormat) );
+
+	static GLenum s_imageFormat[] =
+	{
+		GL_ZERO,     // BC1
+		GL_ZERO,     // BC2
+		GL_ZERO,     // BC3
+		GL_ZERO,     // BC4
+		GL_ZERO,     // BC5
+		GL_ZERO,     // BC6H
+		GL_ZERO,     // BC7
+		GL_ZERO,     // ETC1
+		GL_ZERO,     // ETC2
+		GL_ZERO,     // ETC2A
+		GL_ZERO,     // ETC2A1
+		GL_ZERO,     // PTC12
+		GL_ZERO,     // PTC14
+		GL_ZERO,     // PTC12A
+		GL_ZERO,     // PTC14A
+		GL_ZERO,     // PTC22
+		GL_ZERO,     // PTC24
+		GL_ZERO,     // Unknown
+		GL_ZERO,     // R1
+		GL_R8,       // R8
+		GL_R16,      // R16
+		GL_R16F,     // R16F
+		GL_R32UI,    // R32
+		GL_R32F,     // R32F
+		GL_RG8,      // RG8
+		GL_RG16,     // RG16
+		GL_RG16F,    // RG16F
+		GL_RG32UI,   // RG32
+		GL_RG32F,    // RG32F
+		GL_RGBA8,    // BGRA8
+		GL_RGBA16,   // RGBA16
+		GL_RGBA16F,  // RGBA16F
+		GL_RGBA32UI, // RGBA32
+		GL_RGBA32F,  // RGBA32F
+		GL_RGB565,   // R5G6B5
+		GL_RGBA4,    // RGBA4
+		GL_RGB5_A1,  // RGB5A1
+		GL_RGB10_A2, // RGB10A2
+		GL_ZERO,     // UnknownDepth
+		GL_ZERO,     // D16
+		GL_ZERO,     // D24
+		GL_ZERO,     // D24S8
+		GL_ZERO,     // D32
+		GL_ZERO,     // D16F
+		GL_ZERO,     // D24F
+		GL_ZERO,     // D32F
+		GL_ZERO,     // D0S8
+	};
+	BX_STATIC_ASSERT(TextureFormat::Count == BX_COUNTOF(s_imageFormat) );
 
 	struct Extension
 	{
@@ -224,6 +298,7 @@ namespace bgfx
 			APPLE_texture_format_BGRA8888,
 			APPLE_texture_max_level,
 
+			ARB_compute_shader,
 			ARB_debug_label,
 			ARB_debug_output,
 			ARB_depth_clamp,
@@ -237,12 +312,19 @@ namespace bgfx
 			ARB_instanced_arrays,
 			ARB_map_buffer_range,
 			ARB_multisample,
+			ARB_program_interface_query,
 			ARB_sampler_objects,
 			ARB_seamless_cube_map,
+			ARB_shader_image_load_store,
+			ARB_shader_storage_buffer_object,
 			ARB_shader_texture_lod,
+			ARB_texture_compression_bptc,
 			ARB_texture_compression_rgtc,
 			ARB_texture_float,
 			ARB_texture_multisample,
+			ARB_texture_rg,
+			ARB_texture_rgb10_a2ui,
+			ARB_texture_stencil8,
 			ARB_texture_storage,
 			ARB_texture_swizzle,
 			ARB_timer_query,
@@ -261,6 +343,7 @@ namespace bgfx
 			EXT_blend_color,
 			EXT_blend_minmax,
 			EXT_blend_subtract,
+			EXT_compressed_ETC1_RGB8_sub_texture,
 			EXT_debug_label,
 			EXT_debug_marker,
 			EXT_frag_depth,
@@ -269,6 +352,7 @@ namespace bgfx
 			EXT_framebuffer_sRGB,
 			EXT_occlusion_query_boolean,
 			EXT_read_format_bgra,
+			EXT_shader_image_load_store,
 			EXT_shader_texture_lod,
 			EXT_shadow_samplers,
 			EXT_texture_array,
@@ -278,6 +362,7 @@ namespace bgfx
 			EXT_texture_compression_s3tc,
 			EXT_texture_filter_anisotropic,
 			EXT_texture_format_BGRA8888,
+			EXT_texture_rg,
 			EXT_texture_sRGB,
 			EXT_texture_storage,
 			EXT_texture_swizzle,
@@ -296,6 +381,8 @@ namespace bgfx
 			IMG_texture_compression_pvrtc,
 			IMG_texture_compression_pvrtc2,
 			IMG_texture_format_BGRA8888,
+
+			INTEL_fragment_shader_ordering,
 
 			KHR_debug,
 
@@ -357,6 +444,7 @@ namespace bgfx
 		{ "APPLE_texture_format_BGRA8888",         false,                             true  },
 		{ "APPLE_texture_max_level",               false,                             true  },
 
+		{ "ARB_compute_shader",                    BGFX_CONFIG_RENDERER_OPENGL >= 43, true  },
 		{ "ARB_debug_label",                       false,                             true  },
 		{ "ARB_debug_output",                      BGFX_CONFIG_RENDERER_OPENGL >= 43, true  },
 		{ "ARB_depth_clamp",                       BGFX_CONFIG_RENDERER_OPENGL >= 32, true  },
@@ -370,12 +458,19 @@ namespace bgfx
 		{ "ARB_instanced_arrays",                  BGFX_CONFIG_RENDERER_OPENGL >= 33, true  },
 		{ "ARB_map_buffer_range",                  BGFX_CONFIG_RENDERER_OPENGL >= 30, true  },
 		{ "ARB_multisample",                       false,                             true  },
+		{ "ARB_program_interface_query",           BGFX_CONFIG_RENDERER_OPENGL >= 43, true  },
 		{ "ARB_sampler_objects",                   BGFX_CONFIG_RENDERER_OPENGL >= 33, true  },
 		{ "ARB_seamless_cube_map",                 BGFX_CONFIG_RENDERER_OPENGL >= 32, true  },
+		{ "ARB_shader_image_load_store",           BGFX_CONFIG_RENDERER_OPENGL >= 42, true  },
+		{ "ARB_shader_storage_buffer_object",      BGFX_CONFIG_RENDERER_OPENGL >= 43, true  },
 		{ "ARB_shader_texture_lod",                BGFX_CONFIG_RENDERER_OPENGL >= 30, true  },
+		{ "ARB_texture_compression_bptc",          BGFX_CONFIG_RENDERER_OPENGL >= 44, true  },
 		{ "ARB_texture_compression_rgtc",          BGFX_CONFIG_RENDERER_OPENGL >= 30, true  },
 		{ "ARB_texture_float",                     BGFX_CONFIG_RENDERER_OPENGL >= 30, true  },
 		{ "ARB_texture_multisample",               BGFX_CONFIG_RENDERER_OPENGL >= 32, true  },
+		{ "ARB_texture_rg",                        BGFX_CONFIG_RENDERER_OPENGL >= 30, true  },
+		{ "ARB_texture_rgb10_a2ui",                BGFX_CONFIG_RENDERER_OPENGL >= 33, true  },
+		{ "ARB_texture_stencil8",                  false,                             true  },
 		{ "ARB_texture_storage",                   BGFX_CONFIG_RENDERER_OPENGL >= 42, true  },
 		{ "ARB_texture_swizzle",                   BGFX_CONFIG_RENDERER_OPENGL >= 33, true  },
 		{ "ARB_timer_query",                       BGFX_CONFIG_RENDERER_OPENGL >= 33, true  },
@@ -394,6 +489,7 @@ namespace bgfx
 		{ "EXT_blend_color",                       BGFX_CONFIG_RENDERER_OPENGL >= 31, true  },
 		{ "EXT_blend_minmax",                      BGFX_CONFIG_RENDERER_OPENGL >= 14, true  },
 		{ "EXT_blend_subtract",                    BGFX_CONFIG_RENDERER_OPENGL >= 14, true  },
+		{ "EXT_compressed_ETC1_RGB8_sub_texture",  false,                             true  }, // GLES2 extension.
 		{ "EXT_debug_label",                       false,                             true  },
 		{ "EXT_debug_marker",                      false,                             true  },
 		{ "EXT_frag_depth",                        false,                             true  }, // GLES2 extension.
@@ -402,6 +498,7 @@ namespace bgfx
 		{ "EXT_framebuffer_sRGB",                  BGFX_CONFIG_RENDERER_OPENGL >= 30, true  },
 		{ "EXT_occlusion_query_boolean",           false,                             true  },
 		{ "EXT_read_format_bgra",                  false,                             true  },
+		{ "EXT_shader_image_load_store",           false,                             true  },
 		{ "EXT_shader_texture_lod",                false,                             true  }, // GLES2 extension.
 		{ "EXT_shadow_samplers",                   false,                             true  },
 		{ "EXT_texture_array",                     BGFX_CONFIG_RENDERER_OPENGL >= 30, true  },
@@ -411,6 +508,7 @@ namespace bgfx
 		{ "EXT_texture_compression_s3tc",          false,                             true  },
 		{ "EXT_texture_filter_anisotropic",        false,                             true  },
 		{ "EXT_texture_format_BGRA8888",           false,                             true  },
+		{ "EXT_texture_rg",                        false,                             true  }, // GLES2 extension.
 		{ "EXT_texture_sRGB",                      false,                             true  },
 		{ "EXT_texture_storage",                   false,                             true  },
 		{ "EXT_texture_swizzle",                   false,                             true  },
@@ -429,6 +527,8 @@ namespace bgfx
 		{ "IMG_texture_compression_pvrtc",         false,                             true  },
 		{ "IMG_texture_compression_pvrtc2",        false,                             true  },
 		{ "IMG_texture_format_BGRA8888",           false,                             true  },
+
+		{ "INTEL_fragment_shader_ordering",        false,                             true  },
 
 		{ "KHR_debug",                             BGFX_CONFIG_RENDERER_OPENGL >= 43, true  },
 
@@ -1017,34 +1117,10 @@ namespace bgfx
 				}
 			}
 
-			uint64_t supportedTextureFormats = 0
-				| (s_textureFormat[TextureFormat::BC1   ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_BC1    : 0)
-				| (s_textureFormat[TextureFormat::BC2   ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_BC2    : 0)
-				| (s_textureFormat[TextureFormat::BC3   ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_BC3    : 0)
-				| (s_textureFormat[TextureFormat::BC4   ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_BC4    : 0)
-				| (s_textureFormat[TextureFormat::BC5   ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_BC5    : 0)
-				| (s_textureFormat[TextureFormat::ETC1  ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_ETC1   : 0)
-				| (s_textureFormat[TextureFormat::ETC2  ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_ETC2   : 0)
-				| (s_textureFormat[TextureFormat::ETC2A ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_ETC2A  : 0)
-				| (s_textureFormat[TextureFormat::ETC2A1].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_ETC2A1 : 0)
-				| (s_textureFormat[TextureFormat::PTC12 ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_PTC12  : 0)
-				| (s_textureFormat[TextureFormat::PTC14 ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_PTC14  : 0)
-				| (s_textureFormat[TextureFormat::PTC14A].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_PTC14A : 0)
-				| (s_textureFormat[TextureFormat::PTC12A].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_PTC12A : 0)
-				| (s_textureFormat[TextureFormat::PTC22 ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_PTC22  : 0)
-				| (s_textureFormat[TextureFormat::PTC24 ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_PTC24  : 0)
-				| 0
-				| (s_textureFormat[TextureFormat::D16   ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_D16    : 0)
-				| (s_textureFormat[TextureFormat::D24   ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_D24    : 0)
-				| (s_textureFormat[TextureFormat::D24S8 ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_D24S8  : 0)
-				| (s_textureFormat[TextureFormat::D32   ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_D32    : 0)
-				| (s_textureFormat[TextureFormat::D16F  ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_D16F   : 0)
-				| (s_textureFormat[TextureFormat::D24F  ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_D24F   : 0)
-				| (s_textureFormat[TextureFormat::D32F  ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_D32F   : 0)
-				| (s_textureFormat[TextureFormat::D0S8  ].m_supported ? BGFX_CAPS_TEXTURE_FORMAT_D0S8   : 0)
-				;
-
-			g_caps.supported |= supportedTextureFormats;
+			for (uint32_t ii = 0; ii < TextureFormat::Count; ++ii)
+			{
+				g_caps.formats[ii] = s_textureFormat[ii].m_supported ? 1 : 0;
+			}
 
 			g_caps.supported |= !!(BGFX_CONFIG_RENDERER_OPENGL || BGFX_CONFIG_RENDERER_OPENGLES >= 30) || s_extension[Extension::OES_texture_3D].m_supported
 				? BGFX_CAPS_TEXTURE_3D
@@ -1062,11 +1138,15 @@ namespace bgfx
 				? BGFX_CAPS_FRAGMENT_DEPTH
 				: 0
 				;
-
 			g_caps.supported |= s_extension[Extension::ARB_draw_buffers_blend].m_supported
 				? BGFX_CAPS_BLEND_INDEPENDENT
 				: 0
 				;
+			g_caps.supported |= s_extension[Extension::INTEL_fragment_shader_ordering].m_supported
+				? BGFX_CAPS_FRAGMENT_ORDERING
+				: 0
+				;
+
 			g_caps.maxTextureSize = glGet(GL_MAX_TEXTURE_SIZE);
 
 			if (BX_ENABLED(BGFX_CONFIG_RENDERER_OPENGL)
@@ -1124,6 +1204,12 @@ namespace bgfx
 
 			g_caps.supported |= m_depthTextureSupport 
 				? BGFX_CAPS_TEXTURE_COMPARE_LEQUAL
+				: 0
+				;
+
+			g_caps.supported |= !!(BGFX_CONFIG_RENDERER_OPENGLES >= 31)
+				|| s_extension[Extension::ARB_compute_shader].m_supported
+				? BGFX_CAPS_COMPUTE
 				: 0
 				;
 
@@ -2139,6 +2225,14 @@ namespace bgfx
 
 		switch (_type)
 		{
+			GLSL_TYPE(GL_INT);
+			GLSL_TYPE(GL_INT_VEC2);
+			GLSL_TYPE(GL_INT_VEC3);
+			GLSL_TYPE(GL_INT_VEC4);		
+			GLSL_TYPE(GL_UNSIGNED_INT);
+			GLSL_TYPE(GL_UNSIGNED_INT_VEC2);
+			GLSL_TYPE(GL_UNSIGNED_INT_VEC3);
+			GLSL_TYPE(GL_UNSIGNED_INT_VEC4);
 			GLSL_TYPE(GL_FLOAT);
 			GLSL_TYPE(GL_FLOAT_VEC2);
 			GLSL_TYPE(GL_FLOAT_VEC3);
@@ -2158,10 +2252,15 @@ namespace bgfx
 			GLSL_TYPE(GL_SAMPLER_CUBE);
 // 			GLSL_TYPE(GL_SAMPLER_1D_SHADOW);
 			GLSL_TYPE(GL_SAMPLER_2D_SHADOW);
+			GLSL_TYPE(GL_IMAGE_1D);
+			GLSL_TYPE(GL_IMAGE_2D);
+			GLSL_TYPE(GL_IMAGE_3D);
+			GLSL_TYPE(GL_IMAGE_CUBE);
 		}
 
 #undef GLSL_TYPE
 
+		BX_CHECK(false, "Unknown GLSL type? %x", _type);
 		return "UNKNOWN GLSL TYPE!";
 	}
 
@@ -2188,6 +2287,7 @@ namespace bgfx
 
 #undef GLENUM
 
+		BX_WARN(false, "Unknown enum? %x", _enum);
 		return "<GLenum?>";
 	}
 
@@ -2196,6 +2296,7 @@ namespace bgfx
 		switch (_type)
 		{
 		case GL_INT:
+		case GL_UNSIGNED_INT:
 			return UniformType::Uniform1iv;
 
 		case GL_FLOAT:
@@ -2233,6 +2334,10 @@ namespace bgfx
 		case GL_SAMPLER_CUBE:
 // 		case GL_SAMPLER_1D_SHADOW:
  		case GL_SAMPLER_2D_SHADOW:
+		case GL_IMAGE_1D:
+		case GL_IMAGE_2D:
+		case GL_IMAGE_3D:
+		case GL_IMAGE_CUBE:
 			return UniformType::Uniform1iv;
 		};
 
@@ -2251,7 +2356,12 @@ namespace bgfx
 		if (!cached)
 		{
 			GL_CHECK(glAttachShader(m_id, _vsh.m_id) );
-			GL_CHECK(glAttachShader(m_id, _fsh.m_id) );
+
+			if (0 != _fsh.m_id)
+			{
+				GL_CHECK(glAttachShader(m_id, _fsh.m_id) );
+			}
+
 			GL_CHECK(glLinkProgram(m_id) );
 
 			GLint linked = 0;
@@ -2277,7 +2387,11 @@ namespace bgfx
 			// Must be after init, otherwise init might fail to lookup shader
 			// info (NVIDIA Tegra 3 OpenGL ES 2.0 14.01003).
 			GL_CHECK(glDetachShader(m_id, _vsh.m_id) );
-			GL_CHECK(glDetachShader(m_id, _fsh.m_id) );
+
+			if (0 != _fsh.m_id)
+			{
+				GL_CHECK(glDetachShader(m_id, _fsh.m_id) );
+			}
 		}
 	}
 
@@ -2302,19 +2416,30 @@ namespace bgfx
 
 	void ProgramGL::init()
 	{
-		GLint activeAttribs;
-		GLint activeUniforms;
+		GLint activeAttribs  = 0;
+		GLint activeUniforms = 0;
+		GLint activeBuffers  = 0;
 
 #if BGFX_CONFIG_RENDERER_OPENGL >= 31
 		GL_CHECK(glBindFragDataLocation(m_id, 0, "bgfx_FragColor") );
 #endif // BGFX_CONFIG_RENDERER_OPENGL >= 31
 
-		GL_CHECK(glGetProgramiv(m_id, GL_ACTIVE_ATTRIBUTES, &activeAttribs) );
-		GL_CHECK(glGetProgramiv(m_id, GL_ACTIVE_UNIFORMS, &activeUniforms) );
+		if (s_extension[Extension::ARB_program_interface_query].m_supported
+		||  BX_ENABLED(BGFX_CONFIG_RENDERER_OPENGLES >= 31) )
+		{
+			GL_CHECK(glGetProgramInterfaceiv(m_id, GL_PROGRAM_INPUT,   GL_ACTIVE_RESOURCES, &activeAttribs ) );
+			GL_CHECK(glGetProgramInterfaceiv(m_id, GL_UNIFORM,         GL_ACTIVE_RESOURCES, &activeUniforms) );
+			GL_CHECK(glGetProgramInterfaceiv(m_id, GL_BUFFER_VARIABLE, GL_ACTIVE_RESOURCES, &activeBuffers ) );
+		}
+		else
+		{
+			GL_CHECK(glGetProgramiv(m_id, GL_ACTIVE_ATTRIBUTES, &activeAttribs ) );
+			GL_CHECK(glGetProgramiv(m_id, GL_ACTIVE_UNIFORMS,   &activeUniforms) );
+		}
 
 		GLint max0, max1;
 		GL_CHECK(glGetProgramiv(m_id, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &max0) );
-		GL_CHECK(glGetProgramiv(m_id, GL_ACTIVE_UNIFORM_MAX_LENGTH, &max1) );
+		GL_CHECK(glGetProgramiv(m_id, GL_ACTIVE_UNIFORM_MAX_LENGTH,   &max1) );
 		uint32_t maxLength = bx::uint32_max(max0, max1);
 		char* name = (char*)alloca(maxLength + 1);
 
@@ -2338,14 +2463,56 @@ namespace bgfx
 		m_constantBuffer = ConstantBuffer::create(1024);
  		m_numSamplers = 0;
 
+		struct VariableInfo
+		{
+			GLenum type;
+			GLint  loc;
+			GLint  num;
+		};
+		VariableInfo vi;
+		GLenum props[] = { GL_TYPE, GL_LOCATION, GL_ARRAY_SIZE };
+
+		const bool piqSupported = s_extension[Extension::ARB_program_interface_query].m_supported;
+
 		BX_TRACE("Uniforms (%d):", activeUniforms);
 		for (int32_t ii = 0; ii < activeUniforms; ++ii)
 		{
-			GLint num;
 			GLenum gltype;
+			GLint num;
+			GLint loc;
 
-			GL_CHECK(glGetActiveUniform(m_id, ii, maxLength + 1, NULL, &num, &gltype, name) );
-			GLint loc = glGetUniformLocation(m_id, name);
+			if (BX_ENABLED(BGFX_CONFIG_RENDERER_OPENGLES >= 31)
+			||  piqSupported)
+			{
+				GL_CHECK(glGetProgramResourceiv(m_id
+					, GL_UNIFORM
+					, ii
+					, BX_COUNTOF(props)
+					, props
+					, BX_COUNTOF(props)
+					, NULL
+					, (GLint*)&vi
+					) );
+
+				GL_CHECK(glGetProgramResourceName(m_id
+					, GL_UNIFORM
+					, ii
+					, maxLength + 1
+					, NULL
+					, name
+					) );
+
+				gltype = vi.type;
+				loc    = vi.loc;
+				num    = vi.num;
+			}
+			else
+			{
+				GL_CHECK(glGetActiveUniform(m_id, ii, maxLength + 1, NULL, &num, &gltype, name) );
+				loc = glGetUniformLocation(m_id, name);
+			}
+
+			num = bx::uint32_max(num, 1);
 
 			int offset = 0;
 			char* array = strchr(name, '[');
@@ -2365,7 +2532,11 @@ namespace bgfx
 			case GL_SAMPLER_3D:
 			case GL_SAMPLER_CUBE:
 			case GL_SAMPLER_2D_SHADOW:
-				BX_TRACE("Sampler %d at %d.", m_numSamplers, loc);
+			case GL_IMAGE_1D:
+			case GL_IMAGE_2D:
+			case GL_IMAGE_3D:
+			case GL_IMAGE_CUBE:
+				BX_TRACE("Sampler #%d at location %d.", m_numSamplers, loc);
 				m_sampler[m_numSamplers] = loc;
 				m_numSamplers++;
 				break;
@@ -2403,6 +2574,45 @@ namespace bgfx
 				, offset
 				);
 			BX_UNUSED(offset);
+		}
+
+		if (s_extension[Extension::ARB_program_interface_query].m_supported
+		||  BX_ENABLED(BGFX_CONFIG_RENDERER_OPENGLES >= 31) )
+		{
+			struct VariableInfo
+			{
+				GLenum type;
+			};
+			VariableInfo vi;
+			GLenum props[] = { GL_TYPE };
+
+			BX_TRACE("Buffers (%d):", activeBuffers);
+			for (int32_t ii = 0; ii < activeBuffers; ++ii)
+			{
+				GL_CHECK(glGetProgramResourceiv(m_id
+					, GL_BUFFER_VARIABLE
+					, ii
+					, BX_COUNTOF(props)
+					, props
+					, BX_COUNTOF(props)
+					, NULL
+					, (GLint*)&vi
+					) );
+
+				GL_CHECK(glGetProgramResourceName(m_id
+					, GL_BUFFER_VARIABLE
+					, ii
+					, maxLength + 1
+					, NULL
+					, name
+					) );
+
+				BX_TRACE("\t%s %s at %d"
+					, glslTypeName(vi.type)
+					, name
+					, 0 //vi.loc
+					);
+			}
 		}
 
 		m_constantBuffer->finish();
@@ -2647,7 +2857,7 @@ namespace bgfx
 		{
 			uint8_t numMips = imageContainer.m_numMips;
 			const uint32_t startLod = bx::uint32_min(_skip, numMips-1);
-			numMips -= startLod;
+			numMips -= uint8_t(startLod);
 			const ImageBlockInfo& blockInfo = getBlockInfo(TextureFormat::Enum(imageContainer.m_format) );
 			const uint32_t textureWidth  = bx::uint32_max(blockInfo.blockWidth,  imageContainer.m_width >>startLod);
 			const uint32_t textureHeight = bx::uint32_max(blockInfo.blockHeight, imageContainer.m_height>>startLod);
@@ -3076,6 +3286,11 @@ namespace bgfx
 		uint16_t count;
 		bx::read(&reader, count);
 
+		BX_TRACE("%s Shader consts %d"
+			, BGFX_CHUNK_MAGIC_FSH == magic ? "Fragment" : BGFX_CHUNK_MAGIC_VSH == magic ? "Vertex" : "Compute"
+			, count
+			);
+
 		for (uint32_t ii = 0; ii < count; ++ii)
 		{
 			uint8_t nameSize;
@@ -3136,6 +3351,8 @@ namespace bgfx
 						;
 
 					bool usesTextureLod = !!bx::findIdentifierMatch(code, s_EXT_shader_texture_lod);
+
+					bool usesFragmentOrdering = !!bx::findIdentifierMatch(code, "beginFragmentShaderOrdering");
 
 					if (usesDerivatives)
 					{
@@ -3209,6 +3426,18 @@ namespace bgfx
 								  "#define texture2DProjLod(_sampler, _coord, _level) texture2DProj(_sampler, _coord)\n"
 								  "#define textureCubeLod(_sampler, _coord, _level) textureCube(_sampler, _coord)\n"
 								);
+						}
+					}
+
+					if (usesFragmentOrdering)
+					{
+						if (s_extension[Extension::INTEL_fragment_shader_ordering].m_supported)
+						{
+							writeString(&writer, "#extension GL_INTEL_fragment_shader_ordering : enable\n");
+						}
+						else
+						{
+							writeString(&writer, "#define beginFragmentShaderOrdering()\n");
 						}
 					}
 
@@ -3322,6 +3551,18 @@ namespace bgfx
 							BGFX_FATAL(0 != fragData, Fatal::InvalidShader, "Unable to find and patch gl_FragData!");
 						}
 
+						if (!!bx::findIdentifierMatch(code, "beginFragmentShaderOrdering") )
+						{
+							if (s_extension[Extension::INTEL_fragment_shader_ordering].m_supported)
+							{
+								writeString(&writer, "#extension GL_INTEL_fragment_shader_ordering : enable\n");
+							}
+							else
+							{
+								writeString(&writer, "#define beginFragmentShaderOrdering()\n");
+							}
+						}
+
 						if (0 != fragData)
 						{
 							writeStringf(&writer, "out vec4 bgfx_FragData[%d];\n", fragData);
@@ -3374,7 +3615,8 @@ namespace bgfx
 				BGFX_FATAL(false, bgfx::Fatal::InvalidShader, "Failed to compile shader.");
 			}
 			else if (BX_ENABLED(BGFX_CONFIG_DEBUG)
-				 &&  s_extension[Extension::ANGLE_translated_shader_source].m_supported)
+				 &&  s_extension[Extension::ANGLE_translated_shader_source].m_supported
+				 &&  NULL != glGetTranslatedShaderSourceANGLE)
 			{
 				GLsizei len;
 				GL_CHECK(glGetShaderiv(m_id, GL_TRANSLATED_SHADER_SOURCE_LENGTH_ANGLE, &len) );
@@ -3585,8 +3827,8 @@ namespace bgfx
 
 		_render->sort();
 
-		RenderState currentState;
-		currentState.reset();
+		RenderDraw currentState;
+		currentState.clear();
 		currentState.m_flags = BGFX_STATE_NONE;
 		currentState.m_stencil = packStencil(BGFX_STENCIL_NONE, BGFX_STENCIL_NONE);
 
@@ -3622,6 +3864,9 @@ namespace bgfx
 		viewScissorRect.clear();
 
 		const bool blendIndependentSupported = s_extension[Extension::ARB_draw_buffers_blend].m_supported;
+		const bool computeSupported = (BX_ENABLED(BGFX_CONFIG_RENDERER_OPENGL) && s_extension[Extension::ARB_compute_shader].m_supported)
+									|| BX_ENABLED(BGFX_CONFIG_RENDERER_OPENGLES >= 31)
+									;
 
 		uint32_t statsNumPrimsSubmitted[BX_COUNTOF(s_primInfo)] = {};
 		uint32_t statsNumPrimsRendered[BX_COUNTOF(s_primInfo)] = {};
@@ -3634,26 +3879,13 @@ namespace bgfx
 
 			for (uint32_t item = 0, numItems = _render->m_num; item < numItems; ++item)
 			{
-				key.decode(_render->m_sortKeys[item]);
-				const RenderState& state = _render->m_renderState[_render->m_sortValues[item] ];
+				const bool isCompute   = key.decode(_render->m_sortKeys[item]);
+				const bool viewChanged = key.m_view != view;
 
-				const uint64_t newFlags = state.m_flags;
-				uint64_t changedFlags = currentState.m_flags ^ state.m_flags;
-				currentState.m_flags = newFlags;
+				const RenderItem& renderItem = _render->m_renderItem[_render->m_sortValues[item] ];
 
-				const uint64_t newStencil = state.m_stencil;
-				uint64_t changedStencil = currentState.m_stencil ^ state.m_stencil;
-				currentState.m_stencil = newStencil;
-
-				if (key.m_view != view)
+				if (viewChanged)
 				{
-					currentState.clear();
-					currentState.m_scissor = !state.m_scissor;
-					changedFlags = BGFX_STATE_MASK;
-					changedStencil = packStencil(BGFX_STENCIL_MASK, BGFX_STENCIL_MASK);
-					currentState.m_flags = newFlags;
-					currentState.m_stencil = newStencil;
-
 					GL_CHECK(glInsertEventMarker(0, s_viewName[key.m_view]) );
 
 					view = key.m_view;
@@ -3686,7 +3918,81 @@ namespace bgfx
 					GL_CHECK(glDisable(GL_BLEND) );
 				}
 
-				uint16_t scissor = state.m_scissor;
+				if (isCompute)
+				{
+					if (computeSupported)
+					{
+						const RenderCompute& compute = renderItem.compute;
+
+						ProgramGL& program = m_program[key.m_program];
+ 						GL_CHECK(glUseProgram(program.m_id) );
+
+						GLbitfield barrier = 0;
+						for (uint32_t ii = 0; ii < BGFX_MAX_COMPUTE_BINDINGS; ++ii)
+						{
+							const ComputeBinding& bind = compute.m_bind[ii];
+							if (invalidHandle != bind.m_idx)
+							{
+								switch (bind.m_type)
+								{
+								case ComputeBinding::Image:
+									{
+										const TextureGL& texture = m_textures[bind.m_idx];
+										GL_CHECK(glBindImageTexture(ii, texture.m_id, bind.m_mip, GL_FALSE, 0, s_access[bind.m_access], s_imageFormat[bind.m_format]) );
+										barrier |= GL_SHADER_IMAGE_ACCESS_BARRIER_BIT;
+									}
+									break;
+
+								case ComputeBinding::Buffer:
+									{
+// 										const VertexBufferGL& vertexBuffer = m_vertexBuffers[bind.m_idx];
+// 										GL_CHECK(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, ii, vertexBuffer.m_id) ); 
+// 										barrier |= GL_SHADER_STORAGE_BARRIER_BIT;
+									}
+									break;
+								}
+							}
+						}
+
+						if (0 != barrier)
+						{
+							bool constantsChanged = compute.m_constBegin < compute.m_constEnd;
+							rendererUpdateUniforms(this, _render->m_constantBuffer, compute.m_constBegin, compute.m_constEnd);
+
+							if (constantsChanged)
+							{
+								commit(*program.m_constantBuffer);
+							}
+
+							GL_CHECK(glDispatchCompute(compute.m_numX, compute.m_numY, compute.m_numZ) );
+							GL_CHECK(glMemoryBarrier(barrier) );
+						}
+					}
+
+					continue;
+				}
+
+				const RenderDraw& draw = renderItem.draw;
+
+				const uint64_t newFlags = draw.m_flags;
+				uint64_t changedFlags = currentState.m_flags ^ draw.m_flags;
+				currentState.m_flags = newFlags;
+
+				const uint64_t newStencil = draw.m_stencil;
+				uint64_t changedStencil = currentState.m_stencil ^ draw.m_stencil;
+				currentState.m_stencil = newStencil;
+
+				if (viewChanged)
+				{
+					currentState.clear();
+					currentState.m_scissor = !draw.m_scissor;
+					changedFlags = BGFX_STATE_MASK;
+					changedStencil = packStencil(BGFX_STENCIL_MASK, BGFX_STENCIL_MASK);
+					currentState.m_flags = newFlags;
+					currentState.m_stencil = newStencil;
+				}
+
+				uint16_t scissor = draw.m_scissor;
 				if (currentState.m_scissor != scissor)
 				{
 					currentState.m_scissor = scissor;
@@ -3843,10 +4149,10 @@ namespace bgfx
 					}
 
 					if ( (BGFX_STATE_BLEND_MASK|BGFX_STATE_BLEND_EQUATION_MASK|BGFX_STATE_BLEND_INDEPENDENT) & changedFlags
-					||  blendFactor != state.m_rgba)
+					||  blendFactor != draw.m_rgba)
 					{
 						if ( (BGFX_STATE_BLEND_MASK|BGFX_STATE_BLEND_EQUATION_MASK|BGFX_STATE_BLEND_INDEPENDENT) & newFlags
-						||  blendFactor != state.m_rgba)
+						||  blendFactor != draw.m_rgba)
 						{
 							const bool enabled = !!(BGFX_STATE_BLEND_MASK & newFlags);
 							const bool independent = !!(BGFX_STATE_BLEND_INDEPENDENT & newFlags)
@@ -3864,7 +4170,7 @@ namespace bgfx
 							const uint32_t equRGB = (equation   )&0x7;
 							const uint32_t equA   = (equation>>3)&0x7;
 
-							const uint32_t numRt = s_renderGL->getNumRt();
+							const uint32_t numRt = getNumRt();
 
 							if (!BX_ENABLED(BGFX_CONFIG_RENDERER_OPENGL)
 							||  1 >= numRt
@@ -3881,9 +4187,9 @@ namespace bgfx
 									GL_CHECK(glBlendEquationSeparate(s_blendEquation[equRGB], s_blendEquation[equA]) );
 
 									if ( (s_blendFactor[srcRGB].m_factor || s_blendFactor[dstRGB].m_factor)
-									&&  blendFactor != state.m_rgba)
+									&&  blendFactor != draw.m_rgba)
 									{
-										const uint32_t rgba = state.m_rgba;
+										const uint32_t rgba = draw.m_rgba;
 										GLclampf rr = ( (rgba>>24)     )/255.0f;
 										GLclampf gg = ( (rgba>>16)&0xff)/255.0f;
 										GLclampf bb = ( (rgba>> 8)&0xff)/255.0f;
@@ -3918,7 +4224,7 @@ namespace bgfx
 									GL_CHECK(glDisablei(GL_BLEND, 0) );
 								}
 
-								for (uint32_t ii = 1, rgba = state.m_rgba; ii < numRt; ++ii, rgba >>= 11)
+								for (uint32_t ii = 1, rgba = draw.m_rgba; ii < numRt; ++ii, rgba >>= 11)
 								{
 									if (0 != (rgba&0x7ff) )
 									{
@@ -3941,7 +4247,7 @@ namespace bgfx
 							GL_CHECK(glDisable(GL_BLEND) );
 						}
 
-						blendFactor = state.m_rgba;
+						blendFactor = draw.m_rgba;
 					}
 
 					const uint64_t pt = _render->m_debug&BGFX_DEBUG_WIREFRAME ? BGFX_STATE_PT_LINES : newFlags&BGFX_STATE_PT_MASK;
@@ -3950,14 +4256,14 @@ namespace bgfx
 				}
 
 				bool programChanged = false;
-				bool constantsChanged = state.m_constBegin < state.m_constEnd;
+				bool constantsChanged = draw.m_constBegin < draw.m_constEnd;
 				bool bindAttribs = false;
-				rendererUpdateUniforms(this, _render->m_constantBuffer, state.m_constBegin, state.m_constEnd);
+				rendererUpdateUniforms(this, _render->m_constantBuffer, draw.m_constBegin, draw.m_constEnd);
 
 				if (key.m_program != programIdx)
 				{
 					programIdx = key.m_program;
-					GLuint id = invalidHandle == programIdx ? 0 : s_renderGL->m_program[programIdx].m_id;
+					GLuint id = invalidHandle == programIdx ? 0 : m_program[programIdx].m_id;
 					GL_CHECK(glUseProgram(id) );
 					programChanged =
 						constantsChanged =
@@ -3966,7 +4272,7 @@ namespace bgfx
 
 				if (invalidHandle != programIdx)
 				{
-					ProgramGL& program = s_renderGL->m_program[programIdx];
+					ProgramGL& program = m_program[programIdx];
 
 					if (constantsChanged)
 					{
@@ -4086,9 +4392,9 @@ namespace bgfx
 
 						case PredefinedUniform::Model:
 							{
-								const Matrix4& model = _render->m_matrixCache.m_cache[state.m_matrix];
+								const Matrix4& model = _render->m_matrixCache.m_cache[draw.m_matrix];
 								GL_CHECK(glUniformMatrix4fv(predefined.m_loc
-									, bx::uint32_min(predefined.m_count, state.m_num)
+									, bx::uint32_min(predefined.m_count, draw.m_num)
 									, GL_FALSE
 									, model.un.val
 									) );
@@ -4098,7 +4404,7 @@ namespace bgfx
 						case PredefinedUniform::ModelView:
 							{
 								Matrix4 modelView;
-								const Matrix4& model = _render->m_matrixCache.m_cache[state.m_matrix];
+								const Matrix4& model = _render->m_matrixCache.m_cache[draw.m_matrix];
 								bx::float4x4_mul(&modelView.un.f4x4, &model.un.f4x4, &_render->m_view[view].un.f4x4);
 
 								GL_CHECK(glUniformMatrix4fv(predefined.m_loc
@@ -4112,7 +4418,7 @@ namespace bgfx
 						case PredefinedUniform::ModelViewProj:
 							{
 								Matrix4 modelViewProj;
-								const Matrix4& model = _render->m_matrixCache.m_cache[state.m_matrix];
+								const Matrix4& model = _render->m_matrixCache.m_cache[draw.m_matrix];
 								bx::float4x4_mul(&modelViewProj.un.f4x4, &model.un.f4x4, &viewProj[view].un.f4x4);
 
 								GL_CHECK(glUniformMatrix4fv(predefined.m_loc
@@ -4134,12 +4440,10 @@ namespace bgfx
 						}
 					}
 
-//						if (BGFX_STATE_TEX_MASK & changedFlags)
 					{
-						uint64_t flag = BGFX_STATE_TEX0;
-						for (uint32_t stage = 0; stage < BGFX_STATE_TEX_COUNT; ++stage)
+						for (uint32_t stage = 0; stage < BGFX_CONFIG_MAX_TEXTURE_SAMPLERS; ++stage)
 						{
-							const Sampler& sampler = state.m_sampler[stage];
+							const Sampler& sampler = draw.m_sampler[stage];
 							Sampler& current = currentState.m_sampler[stage];
 							if (current.m_idx != sampler.m_idx
 							||  current.m_flags != sampler.m_flags
@@ -4147,44 +4451,43 @@ namespace bgfx
 							{
 								if (invalidHandle != sampler.m_idx)
 								{
-									TextureGL& texture = s_renderGL->m_textures[sampler.m_idx];
+									TextureGL& texture = m_textures[sampler.m_idx];
 									texture.commit(stage, sampler.m_flags);
 								}
 							}
 
 							current = sampler;
-							flag <<= 1;
 						}
 					}
 
 					if (0 != defaultVao
-					&&  0 == state.m_startVertex
-					&&  0 == state.m_instanceDataOffset)
+					&&  0 == draw.m_startVertex
+					&&  0 == draw.m_instanceDataOffset)
 					{
 						if (programChanged
-						||  currentState.m_vertexBuffer.idx != state.m_vertexBuffer.idx
-						||  currentState.m_indexBuffer.idx != state.m_indexBuffer.idx
-						||  currentState.m_instanceDataBuffer.idx != state.m_instanceDataBuffer.idx
-						||  currentState.m_instanceDataOffset != state.m_instanceDataOffset
-						||  currentState.m_instanceDataStride != state.m_instanceDataStride)
+						||  currentState.m_vertexBuffer.idx != draw.m_vertexBuffer.idx
+						||  currentState.m_indexBuffer.idx != draw.m_indexBuffer.idx
+						||  currentState.m_instanceDataBuffer.idx != draw.m_instanceDataBuffer.idx
+						||  currentState.m_instanceDataOffset != draw.m_instanceDataOffset
+						||  currentState.m_instanceDataStride != draw.m_instanceDataStride)
 						{
 							bx::HashMurmur2A murmur;
 							murmur.begin();
-							murmur.add(state.m_vertexBuffer.idx);
-							murmur.add(state.m_indexBuffer.idx);
-							murmur.add(state.m_instanceDataBuffer.idx);
-							murmur.add(state.m_instanceDataOffset);
-							murmur.add(state.m_instanceDataStride);
+							murmur.add(draw.m_vertexBuffer.idx);
+							murmur.add(draw.m_indexBuffer.idx);
+							murmur.add(draw.m_instanceDataBuffer.idx);
+							murmur.add(draw.m_instanceDataOffset);
+							murmur.add(draw.m_instanceDataStride);
 							murmur.add(programIdx);
 							uint32_t hash = murmur.end();
 
-							currentState.m_vertexBuffer = state.m_vertexBuffer;
-							currentState.m_indexBuffer = state.m_indexBuffer;
-							currentState.m_instanceDataOffset = state.m_instanceDataOffset;
-							currentState.m_instanceDataStride = state.m_instanceDataStride;
-							baseVertex = state.m_startVertex;
+							currentState.m_vertexBuffer = draw.m_vertexBuffer;
+							currentState.m_indexBuffer = draw.m_indexBuffer;
+							currentState.m_instanceDataOffset = draw.m_instanceDataOffset;
+							currentState.m_instanceDataStride = draw.m_instanceDataStride;
+							baseVertex = draw.m_startVertex;
 
-							GLuint id = s_renderGL->m_vaoStateCache.find(hash);
+							GLuint id = m_vaoStateCache.find(hash);
 							if (UINT32_MAX != id)
 							{
 								currentVao = id;
@@ -4192,28 +4495,28 @@ namespace bgfx
 							}
 							else
 							{
-								id = s_renderGL->m_vaoStateCache.add(hash);
+								id = m_vaoStateCache.add(hash);
 								currentVao = id;
 								GL_CHECK(glBindVertexArray(id) );
 
-								ProgramGL& program = s_renderGL->m_program[programIdx];
+								ProgramGL& program = m_program[programIdx];
 								program.add(hash);
 
-								if (isValid(state.m_vertexBuffer) )
+								if (isValid(draw.m_vertexBuffer) )
 								{
-									VertexBufferGL& vb = s_renderGL->m_vertexBuffers[state.m_vertexBuffer.idx];
+									VertexBufferGL& vb = m_vertexBuffers[draw.m_vertexBuffer.idx];
 									vb.add(hash);
 									GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, vb.m_id) );
 
-									uint16_t decl = !isValid(vb.m_decl) ? state.m_vertexDecl.idx : vb.m_decl.idx;
-									program.bindAttributes(s_renderGL->m_vertexDecls[decl], state.m_startVertex);
+									uint16_t decl = !isValid(vb.m_decl) ? draw.m_vertexDecl.idx : vb.m_decl.idx;
+									program.bindAttributes(m_vertexDecls[decl], draw.m_startVertex);
 
-									if (isValid(state.m_instanceDataBuffer) )
+									if (isValid(draw.m_instanceDataBuffer) )
 									{
-										VertexBufferGL& instanceVb = s_renderGL->m_vertexBuffers[state.m_instanceDataBuffer.idx];
+										VertexBufferGL& instanceVb = m_vertexBuffers[draw.m_instanceDataBuffer.idx];
 										instanceVb.add(hash);
 										GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, instanceVb.m_id) );
-										program.bindInstanceData(state.m_instanceDataStride, state.m_instanceDataOffset);
+										program.bindInstanceData(draw.m_instanceDataStride, draw.m_instanceDataOffset);
 									}
 								}
 								else
@@ -4221,9 +4524,9 @@ namespace bgfx
 									GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, 0) );
 								}
 
-								if (isValid(state.m_indexBuffer) )
+								if (isValid(draw.m_indexBuffer) )
 								{
-									IndexBufferGL& ib = s_renderGL->m_indexBuffers[state.m_indexBuffer.idx];
+									IndexBufferGL& ib = m_indexBuffers[draw.m_indexBuffer.idx];
 									ib.add(hash);
 									GL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ib.m_id) );
 								}
@@ -4247,20 +4550,20 @@ namespace bgfx
 						}
 
 						if (programChanged
-						||  currentState.m_vertexBuffer.idx != state.m_vertexBuffer.idx
-						||  currentState.m_instanceDataBuffer.idx != state.m_instanceDataBuffer.idx
-						||  currentState.m_instanceDataOffset != state.m_instanceDataOffset
-						||  currentState.m_instanceDataStride != state.m_instanceDataStride)
+						||  currentState.m_vertexBuffer.idx != draw.m_vertexBuffer.idx
+						||  currentState.m_instanceDataBuffer.idx != draw.m_instanceDataBuffer.idx
+						||  currentState.m_instanceDataOffset != draw.m_instanceDataOffset
+						||  currentState.m_instanceDataStride != draw.m_instanceDataStride)
 						{
-							currentState.m_vertexBuffer = state.m_vertexBuffer;
-							currentState.m_instanceDataBuffer.idx = state.m_instanceDataBuffer.idx;
-							currentState.m_instanceDataOffset = state.m_instanceDataOffset;
-							currentState.m_instanceDataStride = state.m_instanceDataStride;
+							currentState.m_vertexBuffer = draw.m_vertexBuffer;
+							currentState.m_instanceDataBuffer.idx = draw.m_instanceDataBuffer.idx;
+							currentState.m_instanceDataOffset = draw.m_instanceDataOffset;
+							currentState.m_instanceDataStride = draw.m_instanceDataStride;
 
-							uint16_t handle = state.m_vertexBuffer.idx;
+							uint16_t handle = draw.m_vertexBuffer.idx;
 							if (invalidHandle != handle)
 							{
-								VertexBufferGL& vb = s_renderGL->m_vertexBuffers[handle];
+								VertexBufferGL& vb = m_vertexBuffers[handle];
 								GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, vb.m_id) );
 								bindAttribs = true;
 							}
@@ -4270,14 +4573,14 @@ namespace bgfx
 							}
 						}
 
-						if (currentState.m_indexBuffer.idx != state.m_indexBuffer.idx)
+						if (currentState.m_indexBuffer.idx != draw.m_indexBuffer.idx)
 						{
-							currentState.m_indexBuffer = state.m_indexBuffer;
+							currentState.m_indexBuffer = draw.m_indexBuffer;
 
-							uint16_t handle = state.m_indexBuffer.idx;
+							uint16_t handle = draw.m_indexBuffer.idx;
 							if (invalidHandle != handle)
 							{
-								IndexBufferGL& ib = s_renderGL->m_indexBuffers[handle];
+								IndexBufferGL& ib = m_indexBuffers[handle];
 								GL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ib.m_id) );
 							}
 							else
@@ -4288,19 +4591,19 @@ namespace bgfx
 
 						if (isValid(currentState.m_vertexBuffer) )
 						{
-							if (baseVertex != state.m_startVertex
+							if (baseVertex != draw.m_startVertex
 							||  bindAttribs)
 							{
-								baseVertex = state.m_startVertex;
-								const VertexBufferGL& vb = s_renderGL->m_vertexBuffers[state.m_vertexBuffer.idx];
-								uint16_t decl = !isValid(vb.m_decl) ? state.m_vertexDecl.idx : vb.m_decl.idx;
-								const ProgramGL& program = s_renderGL->m_program[programIdx];
-								program.bindAttributes(s_renderGL->m_vertexDecls[decl], state.m_startVertex);
+								baseVertex = draw.m_startVertex;
+								const VertexBufferGL& vb = m_vertexBuffers[draw.m_vertexBuffer.idx];
+								uint16_t decl = !isValid(vb.m_decl) ? draw.m_vertexDecl.idx : vb.m_decl.idx;
+								const ProgramGL& program = m_program[programIdx];
+								program.bindAttributes(m_vertexDecls[decl], draw.m_startVertex);
 
-								if (isValid(state.m_instanceDataBuffer) )
+								if (isValid(draw.m_instanceDataBuffer) )
 								{
-									GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, s_renderGL->m_vertexBuffers[state.m_instanceDataBuffer.idx].m_id) );
-									program.bindInstanceData(state.m_instanceDataStride, state.m_instanceDataOffset);
+									GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffers[draw.m_instanceDataBuffer.idx].m_id) );
+									program.bindInstanceData(draw.m_instanceDataStride, draw.m_instanceDataOffset);
 								}
 							}
 						}
@@ -4308,12 +4611,12 @@ namespace bgfx
 
 					if (isValid(currentState.m_vertexBuffer) )
 					{
-						uint32_t numVertices = state.m_numVertices;
+						uint32_t numVertices = draw.m_numVertices;
 						if (UINT32_MAX == numVertices)
 						{
-							const VertexBufferGL& vb = s_renderGL->m_vertexBuffers[currentState.m_vertexBuffer.idx];
-							uint16_t decl = !isValid(vb.m_decl) ? state.m_vertexDecl.idx : vb.m_decl.idx;
-							const VertexDecl& vertexDecl = s_renderGL->m_vertexDecls[decl];
+							const VertexBufferGL& vb = m_vertexBuffers[currentState.m_vertexBuffer.idx];
+							uint16_t decl = !isValid(vb.m_decl) ? draw.m_vertexDecl.idx : vb.m_decl.idx;
+							const VertexDecl& vertexDecl = m_vertexDecls[decl];
 							numVertices = vb.m_size/vertexDecl.m_stride;
 						}
 
@@ -4322,47 +4625,47 @@ namespace bgfx
 						uint32_t numInstances = 0;
 						uint32_t numPrimsRendered = 0;
 
-						if (isValid(state.m_indexBuffer) )
+						if (isValid(draw.m_indexBuffer) )
 						{
-							if (UINT32_MAX == state.m_numIndices)
+							if (UINT32_MAX == draw.m_numIndices)
 							{
-								numIndices = s_renderGL->m_indexBuffers[state.m_indexBuffer.idx].m_size/2;
+								numIndices = m_indexBuffers[draw.m_indexBuffer.idx].m_size/2;
 								numPrimsSubmitted = numIndices/prim.m_div - prim.m_sub;
-								numInstances = state.m_numInstances;
-								numPrimsRendered = numPrimsSubmitted*state.m_numInstances;
+								numInstances = draw.m_numInstances;
+								numPrimsRendered = numPrimsSubmitted*draw.m_numInstances;
 
 								GL_CHECK(glDrawElementsInstanced(prim.m_type
 									, numIndices
 									, GL_UNSIGNED_SHORT
 									, (void*)0
-									, state.m_numInstances
+									, draw.m_numInstances
 									) );
 							}
-							else if (prim.m_min <= state.m_numIndices)
+							else if (prim.m_min <= draw.m_numIndices)
 							{
-								numIndices = state.m_numIndices;
+								numIndices = draw.m_numIndices;
 								numPrimsSubmitted = numIndices/prim.m_div - prim.m_sub;
-								numInstances = state.m_numInstances;
-								numPrimsRendered = numPrimsSubmitted*state.m_numInstances;
+								numInstances = draw.m_numInstances;
+								numPrimsRendered = numPrimsSubmitted*draw.m_numInstances;
 
 								GL_CHECK(glDrawElementsInstanced(prim.m_type
 									, numIndices
 									, GL_UNSIGNED_SHORT
-									, (void*)(uintptr_t)(state.m_startIndex*2)
-									, state.m_numInstances
+									, (void*)(uintptr_t)(draw.m_startIndex*2)
+									, draw.m_numInstances
 									) );
 							}
 						}
 						else
 						{
 							numPrimsSubmitted = numVertices/prim.m_div - prim.m_sub;
-							numInstances = state.m_numInstances;
-							numPrimsRendered = numPrimsSubmitted*state.m_numInstances;
+							numInstances = draw.m_numInstances;
+							numPrimsRendered = numPrimsSubmitted*draw.m_numInstances;
 
 							GL_CHECK(glDrawArraysInstanced(prim.m_type
 								, 0
 								, numVertices
-								, state.m_numInstances
+								, draw.m_numInstances
 								) );
 						}
 
@@ -4374,12 +4677,12 @@ namespace bgfx
 				}
 			}
 
-			s_renderGL->blitMsaaFbo();
+			blitMsaaFbo();
 
 			if (0 < _render->m_num)
 			{
 				captureElapsed = -bx::getHPCounter();
-				s_renderGL->capture();
+				capture();
 				captureElapsed += bx::getHPCounter();
 			}
 		}
@@ -4400,12 +4703,12 @@ namespace bgfx
 		{
 			double elapsedGpuMs = 0.0;
 #if BGFX_CONFIG_RENDERER_OPENGL
-			s_renderGL->m_queries.end(GL_TIME_ELAPSED);
-			uint64_t elapsedGl = s_renderGL->m_queries.getResult(0);
+			m_queries.end(GL_TIME_ELAPSED);
+			uint64_t elapsedGl = m_queries.getResult(0);
 			elapsedGpuMs = double(elapsedGl)/1e6;
 #endif // BGFX_CONFIG_RENDERER_OPENGL
 
-			TextVideoMem& tvm = s_renderGL->m_textVideoMem;
+			TextVideoMem& tvm = m_textVideoMem;
 
 			static int64_t next = now;
 
@@ -4420,10 +4723,10 @@ namespace bgfx
 				tvm.printf(0, pos++, BGFX_CONFIG_DEBUG ? 0x89 : 0x8f, " %s / " BX_COMPILER_NAME " / " BX_CPU_NAME " / " BX_ARCH_NAME " / " BX_PLATFORM_NAME " "
 					, getRendererName()
 					);
-				tvm.printf(0, pos++, 0x0f, "      Vendor: %s", s_renderGL->m_vendor);
-				tvm.printf(0, pos++, 0x0f, "    Renderer: %s", s_renderGL->m_renderer);
-				tvm.printf(0, pos++, 0x0f, "     Version: %s", s_renderGL->m_version);
-				tvm.printf(0, pos++, 0x0f, "GLSL version: %s", s_renderGL->m_glslVersion);
+				tvm.printf(0, pos++, 0x0f, "      Vendor: %s", m_vendor);
+				tvm.printf(0, pos++, 0x0f, "    Renderer: %s", m_renderer);
+				tvm.printf(0, pos++, 0x0f, "     Version: %s", m_version);
+				tvm.printf(0, pos++, 0x0f, "GLSL version: %s", m_glslVersion);
 
 				pos = 10;
 				tvm.printf(10, pos++, 0x8e, "      Frame CPU: %7.3f, % 7.3f \x1f, % 7.3f \x1e [ms] / % 6.2f FPS "
@@ -4543,4 +4846,4 @@ namespace bgfx
 	}
 } // namespace bgfx
 
-#endif // (BGFX_CONFIG_RENDERER_OPENGLES|BGFX_CONFIG_RENDERER_OPENGL)
+#endif // (BGFX_CONFIG_RENDERER_OPENGLES || BGFX_CONFIG_RENDERER_OPENGL)

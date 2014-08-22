@@ -52,6 +52,18 @@ namespace bgfx
 		};
 	};
 
+	struct Access
+	{
+		enum Enum
+		{
+			Read,
+			Write,
+			ReadWrite,
+
+			Count
+		};
+	};
+
 	struct Attrib
 	{
 		enum Enum // corresponds to vertex shader attribute:
@@ -59,6 +71,7 @@ namespace bgfx
 			Position,  // a_position
 			Normal,    // a_normal
 			Tangent,   // a_tangent
+			Bitangent, // a_bitangent
 			Color0,    // a_color0
 			Color1,    // a_color1
 			Indices,   // a_indices
@@ -91,7 +104,7 @@ namespace bgfx
 
 	struct TextureFormat
 	{
-		// Availability depends on BGFX_CAPS_TEXTURE_FORMAT_*.
+		// Availability depends on Caps (see: formats).
 		enum Enum
 		{
 			BC1,    // DXT1
@@ -99,6 +112,8 @@ namespace bgfx
 			BC3,    // DXT5
 			BC4,    // LATC1/ATI1
 			BC5,    // LATC2/ATI2
+			BC6H,   // BC6H
+			BC7,    // BC7
 			ETC1,   // ETC1 RGB8
 			ETC2,   // ETC2 RGB8
 			ETC2A,  // ETC2 RGBA8
@@ -112,12 +127,22 @@ namespace bgfx
 
 			Unknown, // compressed formats above
 
+			R1,
 			R8,
 			R16,
 			R16F,
+			R32,
+			R32F,
+			RG8,
+			RG16,
+			RG16F,
+			RG32,
+			RG32F,
 			BGRA8,
 			RGBA16,
 			RGBA16F,
+			RGBA32,
+			RGBA32F,
 			R5G6B5,
 			RGBA4,
 			RGB5A1,
@@ -239,6 +264,12 @@ namespace bgfx
 		uint16_t maxTextureSize;   ///< Maximum texture size.
 		uint16_t maxDrawCalls;     ///< Maximum draw calls.
 		uint8_t  maxFBAttachments; ///< Maximum frame buffer attachments.
+
+		/// Supported texture formats.
+		///   0 - not supported
+		///   1 - supported
+		///   2 - emulated
+		uint8_t formats[TextureFormat::Count];
 	};
 
 	struct TransientIndexBuffer
@@ -283,6 +314,8 @@ namespace bgfx
 	/// Vertex declaration.
 	struct VertexDecl
 	{
+		VertexDecl();
+
 		/// Start VertexDecl.
 		VertexDecl& begin(RendererType::Enum _renderer = RendererType::Null);
 
@@ -1085,7 +1118,16 @@ namespace bgfx
 	///
 	uint32_t submitMask(uint32_t _viewMask, int32_t _depth = 0);
 
-	/// Discard all previously set state for draw call.
+	///
+	void setImage(uint8_t _stage, UniformHandle _sampler, TextureHandle _handle, uint8_t _mip, TextureFormat::Enum _format, Access::Enum _access);
+
+	///
+	void setImage(uint8_t _stage, UniformHandle _sampler, FrameBufferHandle _handle, uint8_t _attachment, TextureFormat::Enum _format, Access::Enum _access);
+
+	/// Dispatch compute.
+	void dispatch(uint8_t _id, ProgramHandle _handle, uint16_t _numX = 1, uint16_t _numY = 1, uint16_t _numZ = 1);
+
+	/// Discard all previously set state for draw or compute call.
 	void discard();
 
 	/// Request screen shot.
