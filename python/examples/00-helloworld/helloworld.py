@@ -2,13 +2,10 @@ import sys, os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-import subprocess
-#subprocess.Popen(["c:/python33/python.exe", "setup.py", "build_ext",  "--inplace", "--force"], cwd=os.path.dirname(os.path.dirname(os.path.dirname(__file__)))).wait()
-
 #os.environ['PYSDL2_DLL_PATH'] = "C:\\Users\\Jorgon\\src\\bgfx\\python\\examples\\third_party"
-#os.environ['PYSDL2_DLL_PATH'] = "C:\\Users\\Jorgon\\src\\SDL2\\VisualC\\SDL\\Win32\\Debug"
+os.environ['PYSDL2_DLL_PATH'] = "C:\\Users\\Jorgon\\src\\SDL2\\VisualC\\SDL\\Win32\\Debug"
 
-os.environ['PYSDL2_DLL_PATH'] = "C:\\dont_backup\\personal\\bgfx\\python\\examples\\third_party"
+#os.environ['PYSDL2_DLL_PATH'] = "C:\\dont_backup\\personal\\bgfx\\python\\examples\\third_party"
 
 import sdl2
 import sdl2.ext
