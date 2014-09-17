@@ -61,6 +61,11 @@ namespace entry
 		BX_UNUSED(_width, _height);
 	}
 
+	void setWindowTitle(const char* _title)
+	{
+		BX_UNUSED(_title);
+	}
+
 	void toggleWindowFrame()
 	{
 	}

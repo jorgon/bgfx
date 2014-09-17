@@ -57,12 +57,14 @@ namespace entry
 
 	int32_t MainThreadEntry::threadFunc(void* _userData)
 	{
-        CFBundleRef mainBundle = CFBundleGetMainBundle();
-        CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
-        char path[PATH_MAX];
-        if (CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8 *)path, PATH_MAX))
-            chdir(path);
-        CFRelease(resourcesURL);
+		CFBundleRef mainBundle = CFBundleGetMainBundle();
+		CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
+		char path[PATH_MAX];
+		if (CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8 *)path, PATH_MAX) )
+		{
+			chdir(path);
+		}
+		CFRelease(resourcesURL);
         
 		MainThreadEntry* self = (MainThreadEntry*)_userData;
 		int32_t result = main(self->m_argc, self->m_argv);
@@ -82,6 +84,11 @@ namespace entry
 	void setWindowSize(uint32_t _width, uint32_t _height)
 	{
 		BX_UNUSED(_width, _height);
+	}
+
+	void setWindowTitle(const char* _title)
+	{
+		BX_UNUSED(_title);
 	}
 
 	void toggleWindowFrame()

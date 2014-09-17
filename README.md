@@ -164,7 +164,11 @@ draw calls per frame.
 | i7-920 2.66  | DX9          | GTX650Ti  | VS2008 | x86  | Windows7   |  30 | 27000 |
 | i5-4250U 1.3 | GL2.1        | HD5000    | Clang  | x64  | OSX 10.9   |  28 | 21852 |
 | Q8200 2.33   | NV 319.32    | GTX260    | GCC    | x64  | Linux      |  27 | 19683 |
+| i7-2600K 3.4 | DX9          | AMD6800   | VS2012 | x64  | Windows7   |  27 | 19683 |
+| i7-2600K 3.4 | GL2.1        | AMD6800   | VS2012 | x64  | Windows7   |  26 | 17576 |
 | i7-4770R 3.2 | Mesa 10.0.1  | HD5200    | GCC    | x64  | SteamOS    |  25 | 15625 |
+| i7-4750HQ 2.0| Mesa 10.0.1  | HD5200    | GCC    | x64  | Linux      |  22 | 10648 |
+| i7-4750HQ 2.0| Mesa 10.1.3  | HD5200    | GCC    | x64  | Linux      |  21 |  9261 |
 | i7-920 2.66  | ES2-ANGLE    | GTX650Ti  | VS2008 | x86  | Windows7   |  21 |  9261 |
 | Q8200 2.33   | Gallium 0.4  | AMD5770   | GCC    | x64  | Linux      |  21 |  9261 |
 | i5-4250U 1.3 | ES2          | HD5000    | Clang  | JIT  | PNaCl 31   |  21 |  9261 |
@@ -173,6 +177,7 @@ draw calls per frame.
 | i5-2450M 2.5 | Mesa 10.2.0  | HD3000    | GCC    | x64  | Linux      |  19 |  6859 |
 | i7-920 2.66  | ES2-PowerVR  | GTX650Ti  | VS2008 | x86  | Windows7   |  18 |  5832 |
 | i7-920 2.66  | FF27-GL      | GTX650Ti  | Clang  | JIT  | W7-asm.js  |  17 |  4913 |
+| i7-4750HQ 2.0| Mesa 8.0.5   | LLVMPIPE  | GCC    | x64  | Linux      |  16 |  4096 |
 | i7-920 2.66  | ES2-Qualcomm | GTX650Ti  | VS2008 | x86  | Windows7   |  15 |  3375 |
 | i7-920 2.66  | ES2          | GTX650Ti  | GCC    | x64  | NaCl 31    |  15 |  3375 |
 | i7-920 2.66  | ES2          | GTX650Ti  | Clang  | JIT  | PNaCl 31   |  15 |  3375 |
@@ -463,6 +468,12 @@ https://github.com/bkaradzic/bgfx
 
 All required 3rd party libraries are included in bgfx repository in [3rdparty/](https://github.com/bkaradzic/bgfx/tree/master/3rdparty)
 directory.
+
+### Blendish (MIT)
+
+Blendish - Blender 2.5 UI based theming functions for NanoVG.
+
+https://bitbucket.org/duangle/blendish
 
 ### edtaa3 (MIT)
 
