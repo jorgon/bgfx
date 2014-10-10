@@ -11,9 +11,9 @@ Supported rendering backends:
  * Direct3D 9
  * Direct3D 11
  * OpenGL 2.1
- * OpenGL 3.1
+ * OpenGL 3.1+
  * OpenGL ES 2
- * OpenGL ES 3
+ * OpenGL ES 3.1
 
 Platforms:
 
@@ -23,6 +23,7 @@ Platforms:
  * Linux
  * Native Client
  * OSX
+ * RaspberryPi
  * Windows
 
 Languages:
@@ -44,6 +45,16 @@ is a powerful 2D game engine with live reloading of code and assets, a friendly
 scripting language, and an efficient command-line workflow. Here is video where
 they explain why they choose bgfx over alternatives:  
 <a href="https://www.youtube.com/watch?feature=player_embedded&v=PHY_XHkMGIM&t=1m53s" target="_blank"><img src="https://img.youtube.com/vi/PHY_XHkMGIM/0.jpg" alt="Why did you choose bgfx?" width="240" height="180" border="10" /></a>
+
+https://github.com/dariomanesku/cmftStudio cmftStudio - cubemap filtering tool.
+
+https://github.com/taylor001/crown Crown is a general purpose data-driven game
+engine, written from scratch with a minimalistic and data-oriented design
+philosophy in mind.
+
+https://d-gamedev-team.github.io/gfm/ - GFM is a feature-rich library to ease
+the creation of video games / multimedia applications with the D programming
+language.
 
 Examples
 --------
@@ -196,6 +207,7 @@ draw calls per frame.
 | Xperia Z     | ES2          | Adreno320 | GCC    | ARM  | Android    |  11 |  1331 |
 | iPod 4       | ES2          | PVR SGX535| Clang  | ARM  | iOS6       |   7 |   343 |
 | i7-920 2.66  | ES2-Mali     | GTX650Ti  | VS2008 | x86  | Windows7   |   6 |   216 |
+| RaspberryPi  | ES2          | VC IV     | GCC    | ARM  | Raspbian   |   6 |   216 |
 
 To test browsers in 60Hz mode following changes were made:
 
@@ -249,6 +261,10 @@ MRT rendering and deferred shading.
 
 ![example-21-deferred](https://github.com/bkaradzic/bgfx/raw/master/examples/21-deferred/screenshot.png)
 
+### [22-windows](https://github.com/bkaradzic/bgfx/tree/master/examples/22-windows)
+
+Rendering into multiple windows.
+
 Dependencies
 ------------
 
@@ -258,9 +274,6 @@ Building
 --------
 
 ### Prerequisites
-
-Premake 4.4 beta5 ([prebuilt binaries are part of bx](https://github.com/bkaradzic/bx/tree/master/tools/bin))  
-[http://industriousone.com/premake/download](http://industriousone.com/premake/download)
 
 Windows users download GnuWin32 utilities from:  
 [http://gnuwin32.sourceforge.net/packages/make.htm](http://gnuwin32.sourceforge.net/packages/make.htm)  
@@ -329,6 +342,15 @@ Visual Studio 2008 IDE:
 
 	start .build/projects/vs2008/bgfx.sln
 
+Xcode 5 IDE:
+
+	open .build/projects/xcode4/bgfx.xcworkspace
+Due to [inability](http://industriousone.com/debugdir) to set working directory for an Xcode project from premake configuration file, it has to be set manually for each example project:
+
+1. Open *"Edit scheme..."* dialog for a given project.
+2. Select *"Run"* settings.
+3. Check *"Use custom working directory"* and enter following path: `${PROJECT_DIR}/../../../examples/runtime`.
+
 Linux 64-bit:
 
 	make linux-release64
@@ -385,6 +407,45 @@ platform specific, this obviously won't work nor make sense in all cases.
 Certain platforms have only single choice, for example the Native Client works
 only with OpenGL ES 2.0 renderer, using anything other than that will result in
 build errors.
+
+Debugging and Profiling
+-----------------------
+
+### RenderDoc
+
+Loading of RenderDoc is integrated in bgfx when using DX11 renderer. You can
+drop in `renderdoc.dll` from RenderDoc distribution into working directory,
+and it will be automatically loaded during bgfx initialization. This allows
+frame capture at any time by pressing **F11**.
+
+Download: [RenderDoc](https://renderdoc.org/builds)
+
+### IntelGPA
+
+Right click **Intel GPA Monitor** tray icon, choose preferences, check
+"Auto-detect launched applications" option. Find `InjectionList.txt` in GPA
+directory and add `examples-*` to the list.
+
+Download: [IntelGPA](https://software.intel.com/en-us/vcsource/tools/intel-gpa)
+
+Other debuggers:
+
+| Name      | OS            | DX9  | DX11 |  GL  | GLES | Source |
+|:----------|:--------------|:----:|:----:|:----:|:----:|:------:|
+| APITrace  | Linux/OSX/Win |   x  |  x   |  x   |   x  |    x   |
+| CodeXL    | Linux/Win     |      |      |  x   |      |        |
+| IntelGPA  | Linux/OSX/Win |   x  |  x   |      |   x  |        |
+| Nsight    | Win           |   x  |  x   |  x   |      |        |
+| PerfHUD   | Win           |   x  |  x   |      |      |        |
+| RenderDoc | Win           |      |  x   |      |      |    x   |
+| vogl      | Linux         |      |      |  x   |      |    x   |
+
+Download:  
+[APITrace](https://apitrace.github.io/)  
+[CodeXL](http://developer.amd.com/tools-and-sdks/opencl-zone/codexl/)  
+[Nsight](https://developer.nvidia.com/nvidia-nsight-visual-studio-edition)  
+[PerfHUD](https://developer.nvidia.com/nvidia-perfhud)  
+[vogl](https://github.com/ValveSoftware/vogl)  
 
 SDL, GLFW, etc.
 ---------------
@@ -473,7 +534,7 @@ directory.
 
 Blendish - Blender 2.5 UI based theming functions for NanoVG.
 
-https://bitbucket.org/duangle/blendish
+https://bitbucket.org/duangle/oui-blendish
 
 ### edtaa3 (MIT)
 

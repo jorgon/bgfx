@@ -16,10 +16,7 @@
 #include "entry/entry.h"
 
 #define RENDER_SHADOW_PASS_ID 0
-#define RENDER_SHADOW_PASS_BIT (1<<RENDER_SHADOW_PASS_ID)
-
 #define RENDER_SCENE_PASS_ID  1
-#define RENDER_SCENE_PASS_BIT (1<<RENDER_SCENE_PASS_ID)
 
 uint32_t packUint32(uint8_t _x, uint8_t _y, uint8_t _z, uint8_t _w)
 {
@@ -73,6 +70,11 @@ static bool s_flipV = false;
 static float s_texelHalf = 0.0f;
 bgfx::FrameBufferHandle s_shadowMapFB;
 static bgfx::UniformHandle u_shadowMap;
+
+inline void mtxProj(float* _result, float _fovy, float _aspect, float _near, float _far)
+{
+	bx::mtxProj(_result, _fovy, _aspect, _near, _far, s_flipV);
+}
 
 static void shaderFilePath(char* _out, const char* _name)
 {
@@ -489,7 +491,7 @@ int _main_(int /*_argc*/, char** /*_argv*/)
 	bx::mtxLookAt(view, eye, at);
 
 	const float aspect = float(int32_t(width) ) / float(int32_t(height) );
-	bx::mtxProj(proj, 60.0f, aspect, 0.1f, 1000.0f);
+	mtxProj(proj, 60.0f, aspect, 0.1f, 1000.0f);
 
 	// Time acumulators.
 	float timeAccumulatorLight = 0.0f;
@@ -579,7 +581,12 @@ int _main_(int /*_argc*/, char** /*_argv*/)
 		bgfx::setViewTransform(RENDER_SCENE_PASS_ID, view, proj);
 
 		// Clear backbuffer and shadowmap framebuffer at beginning.
-		bgfx::setViewClearMask(RENDER_SHADOW_PASS_BIT|RENDER_SCENE_PASS_BIT
+		bgfx::setViewClear(RENDER_SHADOW_PASS_ID
+			, BGFX_CLEAR_COLOR_BIT | BGFX_CLEAR_DEPTH_BIT
+			, 0x303030ff, 1.0f, 0
+			);
+
+		bgfx::setViewClear(RENDER_SCENE_PASS_ID
 			, BGFX_CLEAR_COLOR_BIT | BGFX_CLEAR_DEPTH_BIT
 			, 0x303030ff, 1.0f, 0
 			);

@@ -81,18 +81,40 @@ namespace bgfx
 
 	void GlContext::resize(uint32_t _width, uint32_t _height, bool _vsync)
 	{
-		BX_UNUSED(_width, _height, _vsync);
+		BX_UNUSED(_width, _height);
 
 		GLint interval = _vsync ? 1 : 0;
 		NSOpenGLContext* glContext = (NSOpenGLContext*)m_context;
 		[glContext setValues:&interval forParameter:NSOpenGLCPSwapInterval];
+		[glContext update];
 	}
 
-	void GlContext::swap()
+	bool GlContext::isSwapChainSupported()
 	{
+		return false;
+	}
+
+	SwapChainGL* GlContext::createSwapChain(void* /*_nwh*/)
+	{
+		BX_CHECK(false, "Shouldn't be called!");
+		return NULL;
+	}
+
+	void GlContext::destorySwapChain(SwapChainGL*  /*_swapChain*/)
+	{
+		BX_CHECK(false, "Shouldn't be called!");
+	}
+
+	void GlContext::swap(SwapChainGL* _swapChain)
+	{
+		BX_CHECK(NULL == _swapChain, "Shouldn't be called!"); BX_UNUSED(_swapChain);
 		NSOpenGLContext* glContext = (NSOpenGLContext*)m_context;
 		[glContext makeCurrentContext];
 		[glContext flushBuffer];
+	}
+
+	void GlContext::makeCurrent(SwapChainGL* /*_swapChain*/)
+	{
 	}
 
 	void GlContext::import()

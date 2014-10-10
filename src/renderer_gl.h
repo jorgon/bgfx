@@ -6,7 +6,7 @@
 #ifndef BGFX_RENDERER_GL_H_HEADER_GUARD
 #define BGFX_RENDERER_GL_H_HEADER_GUARD
 
-#define BGFX_USE_EGL (BGFX_CONFIG_RENDERER_OPENGLES && (BX_PLATFORM_ANDROID || BX_PLATFORM_EMSCRIPTEN || BX_PLATFORM_QNX || BX_PLATFORM_WINDOWS) )
+#define BGFX_USE_EGL (BGFX_CONFIG_RENDERER_OPENGLES && (BX_PLATFORM_ANDROID || BX_PLATFORM_EMSCRIPTEN || BX_PLATFORM_QNX || BX_PLATFORM_RPI || BX_PLATFORM_WINDOWS) )
 #define BGFX_USE_WGL (BGFX_CONFIG_RENDERER_OPENGL && BX_PLATFORM_WINDOWS)
 #define BGFX_USE_GL_DYNAMIC_LIB (BX_PLATFORM_LINUX || BX_PLATFORM_OSX || BX_PLATFORM_WINDOWS)
 
@@ -190,6 +190,14 @@ typedef uint64_t GLuint64;
 #ifndef GL_RGBA16UI
 #	define GL_RGBA16UI 0x8D76
 #endif // GL_RGBA16UI
+
+#ifndef GL_R11F_G11F_B10F
+#	define GL_R11F_G11F_B10F 0x8C3A
+#endif // GL_R11F_G11F_B10F
+
+#ifndef GL_UNSIGNED_INT_10F_11F_11F_REV
+#	define GL_UNSIGNED_INT_10F_11F_11F_REV 0x8C3B
+#endif // GL_UNSIGNED_INT_10F_11F_11F_REV
 
 #ifndef GL_COMPRESSED_RGB_S3TC_DXT1_EXT
 #	define GL_COMPRESSED_RGB_S3TC_DXT1_EXT 0x83F0
@@ -591,6 +599,11 @@ namespace bgfx
 			m_hashMap.clear();
 		}
 
+		uint32_t getCount() const
+		{
+			return uint32_t(m_hashMap.size() );
+		}
+
 	private:
 		typedef stl::unordered_map<uint32_t, GLuint> HashMap;
 		HashMap m_hashMap;
@@ -661,6 +674,11 @@ namespace bgfx
 				GL_CHECK(glDeleteSamplers(1, &it->second) );
 			}
 			m_hashMap.clear();
+		}
+
+		uint32_t getCount() const
+		{
+			return uint32_t(m_hashMap.size() );
 		}
 
 	private:
@@ -807,19 +825,24 @@ namespace bgfx
 	struct FrameBufferGL
 	{
 		FrameBufferGL()
-			: m_num(0)
+			: m_swapChain(NULL)
+			, m_denseIdx(UINT16_MAX)
+			, m_num(0)
 		{
 			memset(m_fbo, 0, sizeof(m_fbo) );
 		}
 
 		void create(uint8_t _num, const TextureHandle* _handles);
-		void destroy();
+		void create(uint16_t _denseIdx, void* _nwh, uint32_t _width, uint32_t _height, TextureFormat::Enum _depthFormat);
+		uint16_t destroy();
 		void resolve();
 
-		uint8_t m_num;
+		SwapChainGL* m_swapChain;
 		GLuint m_fbo[2];
 		uint32_t m_width;
 		uint32_t m_height;
+		uint16_t m_denseIdx;
+		uint8_t m_num;
 	};
 
 	struct ProgramGL

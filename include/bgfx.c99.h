@@ -28,11 +28,11 @@ typedef enum bgfx_renderer_type
 
 typedef enum bgfx_access
 {
-	BGFX_ACCESS_READ,
-	BGFX_ACCESS_WRITE,
-	BGFX_ACCESS_READWRITE,
+    BGFX_ACCESS_READ,
+    BGFX_ACCESS_WRITE,
+    BGFX_ACCESS_READWRITE,
 
-	BGFX_ACCESS_COUNT
+    BGFX_ACCESS_COUNT
 
 } bgfx_access_t;
 
@@ -112,6 +112,7 @@ typedef enum bgfx_texture_format
     BGFX_TEXTURE_FORMAT_RGBA4,
     BGFX_TEXTURE_FORMAT_RGB5A1,
     BGFX_TEXTURE_FORMAT_RGB10A2,
+    BGFX_TEXTURE_FORMAT_R11G11B10F,
 
     BGFX_TEXTURE_FORMAT_UNKNOWN_DEPTH,
 
@@ -281,6 +282,9 @@ typedef enum bgfx_fatal
     BGFX_FATAL_INVALID_SHADER,
     BGFX_FATAL_UNABLE_TO_INITIALIZE,
     BGFX_FATAL_UNABLE_TO_CREATE_TEXTURE,
+    BGFX_FATAL_DEVICE_LOST,
+
+    BGFX_FATAL_COUNT
 
 } bgfx_fatal_t;
 
@@ -971,6 +975,19 @@ BGFX_C_API bgfx_frame_buffer_handle_t bgfx_create_frame_buffer(uint16_t _width, 
 BGFX_C_API bgfx_frame_buffer_handle_t bgfx_create_frame_buffer_from_handles(uint8_t _num, bgfx_texture_handle_t* _handles, bool _destroyTextures);
 
 /**
+ *  Create frame buffer for multiple window rendering.
+ *
+ *  @param _nwh OS' target native window handle.
+ *  @param _width Window back buffer width.
+ *  @param _height Window back buffer height.
+ *  @param _depthFormat Window back buffer depth format.
+ *
+ *  NOTE:
+ *    Frame buffer cannnot be used for sampling.
+ */
+BGFX_C_API bgfx_frame_buffer_handle_t bgfx_create_frame_buffer_from_nwh(void* _nwh, uint16_t _width, uint16_t _height, bgfx_texture_format_t _depthFormat);
+
+/**
  *  Destroy frame buffer.
  */
 BGFX_C_API void bgfx_destroy_frame_buffer(bgfx_frame_buffer_handle_t _handle);
@@ -1019,6 +1036,14 @@ BGFX_C_API bgfx_uniform_handle_t bgfx_create_uniform(const char* _name, bgfx_uni
 BGFX_C_API void bgfx_destroy_uniform(bgfx_uniform_handle_t _handle);
 
 /**
+ *  Set clear color palette value.
+ *
+ *  @param _index Index into palette.
+ *  @param _rgba RGBA floating point value.
+ */
+BGFX_C_API void bgfx_set_clear_color(uint8_t _index, const float _rgba[4]);
+
+/**
  *  Set view name.
  *
  *  @param _id View id.
@@ -1041,17 +1066,6 @@ BGFX_C_API void bgfx_set_view_name(uint8_t _id, const char* _name);
 BGFX_C_API void bgfx_set_view_rect(uint8_t _id, uint16_t _x, uint16_t _y, uint16_t _width, uint16_t _height);
 
 /**
- *  Set view rectangle for multiple views.
- *
- *  @param _viewMask Bit mask representing affected views.
- *  @param _x Position x from the left corner of the window.
- *  @param _y Position y from the top corner of the window.
- *  @param _width Width of view port region.
- *  @param _height Height of view port region.
- */
-BGFX_C_API void bgfx_set_view_rect_mask(uint32_t _viewMask, uint16_t _x, uint16_t _y, uint16_t _width, uint16_t _height);
-
-/**
  *  Set view scissor. Draw primitive outside view will be clipped. When
  *  _x, _y, _width and _height are set to 0, scissor will be disabled.
  *
@@ -1061,19 +1075,6 @@ BGFX_C_API void bgfx_set_view_rect_mask(uint32_t _viewMask, uint16_t _x, uint16_
  *  @param _height Height of scissor region.
  */
 BGFX_C_API void bgfx_set_view_scissor(uint8_t _id, uint16_t _x, uint16_t _y, uint16_t _width, uint16_t _height);
-
-/**
- *  Set view scissor for multiple views. When _x, _y, _width and _height
- *  are set to 0, scissor will be disabled.
- *
- *  @param _id View id.
- *  @param _viewMask Bit mask representing affected views.
- *  @param _x Position x from the left corner of the window.
- *  @param _y Position y from the top corner of the window.
- *  @param _width Width of scissor region.
- *  @param _height Height of scissor region.
- */
-BGFX_C_API void bgfx_set_view_scissor_mask(uint32_t _viewMask, uint16_t _x, uint16_t _y, uint16_t _width, uint16_t _height);
 
 /**
  *  Set view clear flags.
@@ -1088,20 +1089,23 @@ BGFX_C_API void bgfx_set_view_scissor_mask(uint32_t _viewMask, uint16_t _x, uint
 BGFX_C_API void bgfx_set_view_clear(uint8_t _id, uint8_t _flags, uint32_t _rgba, float _depth, uint8_t _stencil);
 
 /**
- *  Set view clear flags for multiple views.
+ *  Set view clear flags with different clear color for each
+ *  frame buffer texture. Must use setClearColor to setup clear color
+ *  palette.
+
+ *  @param _id View id.
+ *  @param _flags Clear flags. Use BGFX_CLEAR_NONE to remove any clear
+ *  operation. See: BGFX_CLEAR_*.
+ *  @param _depth Depth clear value.
+ *  @param _stencil Stencil clear value.
  */
-BGFX_C_API void bgfx_set_view_clear_mask(uint32_t _viewMask, uint8_t _flags, uint32_t _rgba, float _depth, uint8_t _stencil);
+BGFX_C_API void bgfx_set_view_clear_mrt(uint8_t _id, uint8_t _flags, float _depth, uint8_t _stencil, uint8_t _0, uint8_t _1, uint8_t _2, uint8_t _3, uint8_t _4, uint8_t _5, uint8_t _6, uint8_t _7);
 
 /**
  *  Set view into sequential mode. Draw calls will be sorted in the same
  *  order in which submit calls were called.
  */
 BGFX_C_API void bgfx_set_view_seq(uint8_t _id, bool _enabled);
-
-/**
- *  Set multiple views into sequential mode.
- */
-BGFX_C_API void bgfx_set_view_seq_mask(uint32_t _viewMask, bool _enabled);
 
 /**
  *  Set view frame buffer.
@@ -1114,25 +1118,10 @@ BGFX_C_API void bgfx_set_view_seq_mask(uint32_t _viewMask, bool _enabled);
 BGFX_C_API void bgfx_set_view_frame_buffer(uint8_t _id, bgfx_frame_buffer_handle_t _handle);
 
 /**
- *  Set view frame buffer for multiple views.
- *
- *  @param _viewMask View mask.
- *  @param _handle Frame buffer handle. Passing BGFX_INVALID_HANDLE as
- *    frame buffer handle will draw primitives from this view into
- *    default back buffer.
- */
-BGFX_C_API void bgfx_set_view_frame_buffer_mask(uint32_t _viewMask, bgfx_frame_buffer_handle_t _handle);
-
-/**
  *  Set view view and projection matrices, all draw primitives in this
  *  view will use these matrices.
  */
 BGFX_C_API void bgfx_set_view_transform(uint8_t _id, const void* _view, const void* _proj);
-
-/**
- *  Set view view and projection matrices for multiple views.
- */
-BGFX_C_API void bgfx_set_view_transform_mask(uint32_t _viewMask, const void* _view, const void* _proj);
 
 /**
  *  Sets debug marker.
@@ -1305,15 +1294,6 @@ BGFX_C_API void bgfx_set_texture_from_frame_buffer(uint8_t _stage, bgfx_uniform_
  *  @returns Number of draw calls.
  */
 BGFX_C_API uint32_t bgfx_submit(uint8_t _id, int32_t _depth);
-
-/**
- *  Submit primitive for rendering into multiple views.
- *
- *  @param _viewMask Mask to which views to submit draw primitive calls.
- *  @param _depth Depth for sorting.
- *  @returns Number of draw calls.
- */
-BGFX_C_API uint32_t bgfx_submit_mask(uint32_t _viewMask, int32_t _depth);
 
 /**
  *

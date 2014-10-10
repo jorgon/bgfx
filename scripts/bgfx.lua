@@ -3,10 +3,10 @@
 -- License: http://www.opensource.org/licenses/BSD-2-Clause
 --
 
-function bgfxProject(_name, _uuid, _kind, _defines)
+function bgfxProject(_name, _kind, _defines)
 
 	project ("bgfx" .. _name)
-		uuid (_uuid)
+		uuid (os.uuid("bgfx" .. _name))
 		kind (_kind)
 
 		if _kind == "SharedLib" then
@@ -16,17 +16,17 @@ function bgfxProject(_name, _uuid, _kind, _defines)
 		end
 
 		includedirs {
+			BGFX_DIR .. "3rdparty",
 			BGFX_DIR .. "../bx/include",
 		}
 
 		defines {
-	--		"BGFX_CONFIG_RENDERER_OPENGL=1",
+			_defines,
 		}
 
 		configuration { "Debug" }
 			defines {
 				"BGFX_CONFIG_DEBUG=1",
-				_defines,
 			}
 
 		configuration { "android*" }
@@ -35,15 +35,18 @@ function bgfxProject(_name, _uuid, _kind, _defines)
 				"GLESv2",
 			}
 
-		configuration { "windows" }
+		configuration { "windows", "not vs201*" }
 			includedirs {
 				"$(DXSDK_DIR)/include",
 			}
+
+		configuration { "windows" }
 			links {
 				"gdi32",
+				"psapi",
 			}
 
-		configuration { "osx or ios*" }
+		configuration { "xcode4 or osx or ios*" }
 			files {
 				BGFX_DIR .. "src/**.mm",
 			}
@@ -53,10 +56,15 @@ function bgfxProject(_name, _uuid, _kind, _defines)
 				"Cocoa.framework",
 			}
 
-		configuration { "vs* or linux or mingw or osx or ios*" }
+		configuration { "vs* or linux or mingw or xcode4 or osx or ios* or rpi" }
 			includedirs {
 				--nacl has GLES2 headers modified...
 				BGFX_DIR .. "3rdparty/khronos",
+			}
+
+		configuration { "x64", "vs* or mingw" }
+			defines {
+				"_WIN32_WINNT=0x601",
 			}
 
 		configuration {}

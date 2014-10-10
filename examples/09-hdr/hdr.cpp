@@ -8,6 +8,12 @@
 #include "imgui/imgui.h"
 
 static float s_texelHalf = 0.0f;
+static bool s_originBottomLeft = false;
+
+inline void mtxProj(float* _result, float _fovy, float _aspect, float _near, float _far)
+{
+	bx::mtxProj(_result, _fovy, _aspect, _near, _far, s_originBottomLeft);
+}
 
 struct PosColorTexCoord0Vertex
 {
@@ -209,7 +215,7 @@ int _main_(int /*_argc*/, char** /*_argv*/)
 
 	const bgfx::RendererType::Enum renderer = bgfx::getRendererType();
 	s_texelHalf = bgfx::RendererType::Direct3D9 == renderer ? 0.5f : 0.0f;
-	const bool  originBottomLeft = bgfx::RendererType::OpenGL == renderer || bgfx::RendererType::OpenGLES == renderer;
+	s_originBottomLeft = bgfx::RendererType::OpenGL == renderer || bgfx::RendererType::OpenGLES == renderer;
 
 	uint32_t oldWidth  = 0;
 	uint32_t oldHeight = 0;
@@ -294,8 +300,12 @@ int _main_(int /*_argc*/, char** /*_argv*/)
 		bgfx::dbgTextPrintf(0, 3, 0x0f, "Frame: % 7.3f[ms]", double(frameTime)*toMs);
 
 		// Set views.
-		bgfx::setViewRectMask(0x1f, 0, 0, width, height);
-		bgfx::setViewFrameBufferMask(0x3, fbh);
+		for (uint32_t ii = 0; ii < 6; ++ii)
+		{
+			bgfx::setViewRect(ii, 0, 0, width, height);
+		}
+		bgfx::setViewFrameBuffer(0, fbh);
+		bgfx::setViewFrameBuffer(1, fbh);
 
 		bgfx::setViewRect(2, 0, 0, 128, 128);
 		bgfx::setViewFrameBuffer(2, lum[0]);
@@ -327,19 +337,10 @@ int _main_(int /*_argc*/, char** /*_argv*/)
 		bx::mtxOrtho(proj, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 100.0f);
 
 		// Set view and projection matrix for view 0.
-		bgfx::setViewTransformMask(0
-				|(1<<0)
-				|(1<<2)
-				|(1<<3)
-				|(1<<4)
-				|(1<<5)
-				|(1<<6)
-				|(1<<7)
-				|(1<<8)
-				|(1<<9)
-				, view
-				, proj
-				);
+		for (uint32_t ii = 0; ii < 10; ++ii)
+		{
+			bgfx::setViewTransform(ii, view, proj);
+		}
 
 		float at[3] = { 0.0f, 1.0f, 0.0f };
 		float eye[3] = { 0.0f, 1.0f, -2.5f };
@@ -357,7 +358,7 @@ int _main_(int /*_argc*/, char** /*_argv*/)
 		bx::mtxProj(proj, 60.0f, float(width)/float(height), 0.1f, 100.0f);
 
 		// Set view and projection matrix for view 1.
-		bgfx::setViewTransformMask(1<<1, view, proj);
+		bgfx::setViewTransform(1, view, proj);
 
 		bgfx::setUniform(u_mtx, mtx);
 
@@ -377,7 +378,7 @@ int _main_(int /*_argc*/, char** /*_argv*/)
 		bgfx::setTexture(0, u_texColor, fbtextures[0]);
 		bgfx::setProgram(lumProgram);
 		bgfx::setState(BGFX_STATE_RGB_WRITE|BGFX_STATE_ALPHA_WRITE);
-		screenSpaceQuad(128.0f, 128.0f, originBottomLeft);
+		screenSpaceQuad(128.0f, 128.0f, s_originBottomLeft);
 		bgfx::submit(2);
 
 		// Downscale luminance 0.
@@ -385,7 +386,7 @@ int _main_(int /*_argc*/, char** /*_argv*/)
 		bgfx::setTexture(0, u_texColor, lum[0]);
 		bgfx::setProgram(lumAvgProgram);
 		bgfx::setState(BGFX_STATE_RGB_WRITE|BGFX_STATE_ALPHA_WRITE);
-		screenSpaceQuad(64.0f, 64.0f, originBottomLeft);
+		screenSpaceQuad(64.0f, 64.0f, s_originBottomLeft);
 		bgfx::submit(3);
 
 		// Downscale luminance 1.
@@ -393,7 +394,7 @@ int _main_(int /*_argc*/, char** /*_argv*/)
 		bgfx::setTexture(0, u_texColor, lum[1]);
 		bgfx::setProgram(lumAvgProgram);
 		bgfx::setState(BGFX_STATE_RGB_WRITE|BGFX_STATE_ALPHA_WRITE);
-		screenSpaceQuad(16.0f, 16.0f, originBottomLeft);
+		screenSpaceQuad(16.0f, 16.0f, s_originBottomLeft);
 		bgfx::submit(4);
 
 		// Downscale luminance 2.
@@ -401,7 +402,7 @@ int _main_(int /*_argc*/, char** /*_argv*/)
 		bgfx::setTexture(0, u_texColor, lum[2]);
 		bgfx::setProgram(lumAvgProgram);
 		bgfx::setState(BGFX_STATE_RGB_WRITE|BGFX_STATE_ALPHA_WRITE);
-		screenSpaceQuad(4.0f, 4.0f, originBottomLeft);
+		screenSpaceQuad(4.0f, 4.0f, s_originBottomLeft);
 		bgfx::submit(5);
 
 		// Downscale luminance 3.
@@ -409,7 +410,7 @@ int _main_(int /*_argc*/, char** /*_argv*/)
 		bgfx::setTexture(0, u_texColor, lum[3]);
 		bgfx::setProgram(lumAvgProgram);
 		bgfx::setState(BGFX_STATE_RGB_WRITE|BGFX_STATE_ALPHA_WRITE);
-		screenSpaceQuad(1.0f, 1.0f, originBottomLeft);
+		screenSpaceQuad(1.0f, 1.0f, s_originBottomLeft);
 		bgfx::submit(6);
 
 		float tonemap[4] = { middleGray, square(white), treshold, 0.0f };
@@ -421,14 +422,14 @@ int _main_(int /*_argc*/, char** /*_argv*/)
 		bgfx::setTexture(1, u_texLum, lum[4]);
 		bgfx::setProgram(brightProgram);
 		bgfx::setState(BGFX_STATE_RGB_WRITE|BGFX_STATE_ALPHA_WRITE);
-		screenSpaceQuad( (float)width/2.0f, (float)height/2.0f, originBottomLeft);
+		screenSpaceQuad( (float)width/2.0f, (float)height/2.0f, s_originBottomLeft);
 		bgfx::submit(7);
 
 		// Blur bright pass vertically.
 		bgfx::setTexture(0, u_texColor, bright);
 		bgfx::setProgram(blurProgram);
 		bgfx::setState(BGFX_STATE_RGB_WRITE|BGFX_STATE_ALPHA_WRITE);
-		screenSpaceQuad( (float)width/8.0f, (float)height/8.0f, originBottomLeft);
+		screenSpaceQuad( (float)width/8.0f, (float)height/8.0f, s_originBottomLeft);
 		bgfx::submit(8);
 
 		// Blur bright pass horizontally, do tonemaping and combine.
@@ -437,7 +438,7 @@ int _main_(int /*_argc*/, char** /*_argv*/)
 		bgfx::setTexture(2, u_texBlur, blur);
 		bgfx::setProgram(tonemapProgram);
 		bgfx::setState(BGFX_STATE_RGB_WRITE|BGFX_STATE_ALPHA_WRITE);
-		screenSpaceQuad( (float)width, (float)height, originBottomLeft);
+		screenSpaceQuad( (float)width, (float)height, s_originBottomLeft);
 		bgfx::submit(9);
 
 		// Advance to next frame. Rendering thread will be kicked to 
