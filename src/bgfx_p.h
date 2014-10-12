@@ -137,8 +137,9 @@ namespace stl
 
 #define BGFX_SAMPLER_DEFAULT_FLAGS UINT32_C(0x10000000)
 
-#define BGFX_RENDERER_DIRECT3D9_NAME "Direct3D 9"
+#define BGFX_RENDERER_DIRECT3D9_NAME  "Direct3D 9"
 #define BGFX_RENDERER_DIRECT3D11_NAME "Direct3D 11"
+#define BGFX_RENDERER_DIRECT3D12_NAME "Direct3D 12"
 #define BGFX_RENDERER_NULL_NAME "NULL"
 
 #if BGFX_CONFIG_RENDERER_OPENGL
@@ -748,8 +749,9 @@ namespace bgfx
 
 		uint32_t reserve(uint16_t* _num)
 		{
-			BX_CHECK(m_num+_num < BGFX_CONFIG_MAX_MATRIX_CACHE, "Matrix cache overflow. %d (max: %d)", m_num+_num, BGFX_CONFIG_MAX_MATRIX_CACHE);
-			uint32_t num = bx::uint32_min(BGFX_CONFIG_MAX_MATRIX_CACHE-m_num, *_num);
+			uint32_t num = *_num;
+			BX_CHECK(m_num+num < BGFX_CONFIG_MAX_MATRIX_CACHE, "Matrix cache overflow. %d (max: %d)", m_num+num, BGFX_CONFIG_MAX_MATRIX_CACHE);
+			num = bx::uint32_min(num, BGFX_CONFIG_MAX_MATRIX_CACHE-m_num);
 			uint32_t first = m_num;
 			m_num += num;
 			*_num = (uint16_t)num;
@@ -1247,22 +1249,18 @@ namespace bgfx
 			return m_draw.m_matrix;
 		}
 
-		void setTransform(uint32_t _cache, uint16_t _num)
-		{
-			m_draw.m_matrix = _cache;
-			m_draw.m_num    = _num;
-		}
-
-		void allocTransform(Transform* _transform, uint16_t _num)
+		uint32_t allocTransform(Transform* _transform, uint16_t _num)
 		{
 			uint32_t first   = m_matrixCache.reserve(&_num);
 			_transform->data = m_matrixCache.toPtr(first);
 			_transform->num  = _num;
+
+			return first;
 		}
 
-		void setTransform(const Transform* _transform, uint32_t _first, uint16_t _num)
+		void setTransform(uint32_t _cache, uint16_t _num)
 		{
-			m_draw.m_matrix = m_matrixCache.fromPtr(_transform->data) + _first;
+			m_draw.m_matrix = _cache;
 			m_draw.m_num    = _num;
 		}
 
@@ -2780,19 +2778,14 @@ namespace bgfx
 			return m_submit->setTransform(_mtx, _num);
 		}
 
+		BGFX_API_FUNC(uint32_t allocTransform(Transform* _transform, uint16_t _num) )
+		{
+			return m_submit->allocTransform(_transform, _num);
+		}
+
 		BGFX_API_FUNC(void setTransform(uint32_t _cache, uint16_t _num) )
 		{
 			m_submit->setTransform(_cache, _num);
-		}
-
-		BGFX_API_FUNC(void allocTransform(Transform* _transform, uint16_t _num) )
-		{
-			m_submit->allocTransform(_transform, _num);
-		}
-
-		BGFX_API_FUNC(void setTransform(const Transform* _transform, uint32_t _first, uint16_t _num) )
-		{
-			m_submit->setTransform(_transform, _first, _num);
 		}
 
 		BGFX_API_FUNC(void setUniform(UniformHandle _handle, const void* _value, uint16_t _num) )
